@@ -3,7 +3,7 @@ import { useMemoizedFn } from 'ahooks';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
 import { useHistory, useParams } from 'react-router-dom';
-import { RotateCcw, ArrowUpDown, ArrowDown01, ArrowDown10 } from 'lucide-react';
+import { RotateCcw, ArrowUpDown, ArrowDownNarrowWide, ArrowDownWideNarrow } from 'lucide-react';
 import { useAtom, useAtomValue } from 'jotai';
 import { AreaChart } from '@visactor/react-vchart';
 import { listGetRequest } from '@/lib/request';
@@ -20,11 +20,21 @@ interface NavItemProps {
   lines: PriceAndVolumeItem[];
 }
 
+const SAMPLE_GAP = 10;
+
+const getRate = (lines: PriceAndVolumeItem[]) => {
+  const open = lines[0].open;
+  const close = lines[lines.length - 1].close;
+  const rate = (close - open) / open;
+  return rate;
+};
+
 const NavItem = memo((props: NavItemProps) => {
   const { detail, lines } = props;
   const { id, title } = detail;
   const { id: idFromParams } = useParams<{ id: string }>();
   const history = useHistory();
+  const last = lines.at(-1);
 
   const diff = useMemo(() => {
     if (!lines) {
@@ -61,8 +71,10 @@ const NavItem = memo((props: NavItemProps) => {
             data: {
               values: (lines || []).filter(
                 (item) =>
+                  dayjs(item.timestamp).minute() % SAMPLE_GAP ===
+                    dayjs(last?.timestamp || 0).minute() % SAMPLE_GAP &&
                   // 只显示 9:30 后的数据
-                  dayjs(item.timestamp).hour() > 9 || dayjs(item.timestamp).minute() >= 30,
+                  (dayjs(item.timestamp).hour() > 9 || dayjs(item.timestamp).minute() >= 30),
               ),
             },
             background: 'transparent',
@@ -158,12 +170,15 @@ export const QuickNav = memo(() => {
 
   const sort = useMemoizedFn((a: Item, b: Item, d: Direction | null) => {
     if (!d) {
-      return -1;
+      return (
+        favStockIdList.findIndex((id) => id === a.detail.id) -
+        favStockIdList.findIndex((id) => id === b.detail.id)
+      );
     }
     if (d === 'asc') {
-      return a.lines[a.lines.length - 1].close - b.lines[b.lines.length - 1].close;
+      return getRate(a.lines) - getRate(b.lines);
     }
-    return b.lines[b.lines.length - 1].close - a.lines[a.lines.length - 1].close;
+    return getRate(b.lines) - getRate(a.lines);
   });
 
   const fetchList = useMemoizedFn(async (o: HistoryOption[]) => {
@@ -234,7 +249,13 @@ export const QuickNav = memo(() => {
             size="icon"
             variant="ghost"
           >
-            {!direction ? <ArrowUpDown /> : direction === 'asc' ? <ArrowDown01 /> : <ArrowDown10 />}
+            {!direction ? (
+              <ArrowUpDown />
+            ) : direction === 'asc' ? (
+              <ArrowDownNarrowWide />
+            ) : (
+              <ArrowDownWideNarrow />
+            )}
           </Button>
         </div>
       </div>
