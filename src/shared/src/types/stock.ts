@@ -14,6 +14,8 @@ export interface SearchItem {
 
 export enum PeriodType {
   MINUTE = 'minute',
+  FIVE_MINUTE = 'five_minute',
+  FIFTEEN_MINUTE = 'fifteen_minute',
   HALF_HOUR = 'half_hour',
   HOUR = 'hour',
   DAY = 'day',
@@ -23,12 +25,16 @@ export enum PeriodType {
 
 export enum ChartType {
   MINUTE = 'minute',
+  FIVE_MINUTE = 'five_minute',
+  FIFTEEN_MINUTE = 'fifteen_minute',
   HALF_HOUR = 'half_hour',
   HOUR = 'hour',
   DAY = 'day',
   WEEK = 'week',
   MONTH = 'month',
   WEEK_AND_DAY = 'week_and_day',
+  DAY_AND_HOUR = 'day_and_hour',
+  DAY_AND_FIVE_MINUTE = 'day_and_five_minute',
 }
 
 export interface PriceAndVolumeItem extends KLineData {
@@ -63,6 +69,8 @@ export interface Stroke {
     price: number;
   };
 }
+
+export type Segment = Stroke;
 
 export interface Pivot {
   type: 'up' | 'down';

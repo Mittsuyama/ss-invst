@@ -3,7 +3,7 @@ import { useHistory, useParams } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
 import { ChartType, PriceAndVolumeItem, StockInfo } from '@shared/types/stock';
-import { chartType2PeriodTypes } from '@/lib/constants';
+import { chartType2PeriodTypes, chartTypeTittle } from '@/lib/constants';
 import { favStockIdListAtom, chartTypeAtom, chanlunVisibleAtom } from '@/models/detail';
 import { themeAtom } from '@/models/global';
 import { fetchStockInfo } from '@/api/stock';
@@ -47,7 +47,7 @@ export const Detail = memo(() => {
 
   return (
     <div className="w-full h-full bg-background text-foreground z-50 overflow-hidden flex">
-      <div className="flex-none w-68 overflow-x-hidden overflow-y-auto no-scrollbar">
+      <div className="flex-none w-64 overflow-x-hidden overflow-y-auto no-scrollbar">
         <QuickNav />
       </div>
       <div className="flex-1 overflow-hidden flex flex-col  pr-4">
@@ -102,12 +102,18 @@ export const Detail = memo(() => {
             ) : null}
             <Tabs value={chartType} onValueChange={(v) => setChartType(v as ChartType)}>
               <TabsList>
-                {/* <TabsTrigger value={PeriodType.HALF_HOUR}>30分钟</TabsTrigger>
-                <TabsTrigger value={PeriodType.HOUR}>60分钟</TabsTrigger> */}
-                <TabsTrigger value={ChartType.WEEK_AND_DAY}>日/周</TabsTrigger>
-                <TabsTrigger value={ChartType.DAY}>日</TabsTrigger>
-                <TabsTrigger value={ChartType.WEEK}>周</TabsTrigger>
-                <TabsTrigger value={ChartType.MONTH}>月</TabsTrigger>
+                {[
+                  ChartType.WEEK_AND_DAY,
+                  ChartType.DAY_AND_FIVE_MINUTE,
+                  ChartType.FIVE_MINUTE,
+                  ChartType.DAY,
+                  ChartType.WEEK,
+                  ChartType.MONTH,
+                ].map((c) => (
+                  <TabsTrigger key={c} value={c}>
+                    {chartTypeTittle[c]}
+                  </TabsTrigger>
+                ))}
               </TabsList>
             </Tabs>
             <ButtonGroup>

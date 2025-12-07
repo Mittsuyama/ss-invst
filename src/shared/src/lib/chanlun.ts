@@ -3,6 +3,7 @@ import {
   Pivot,
   PivotDpData,
   PriceAndVolumeItem,
+  Segment,
   Stroke,
   StrokeDpData,
 } from '@shared/types/stock';
@@ -80,51 +81,67 @@ const computeDif = (a: ChanlunK, b: ChanlunK) => {
   return b.high - a.low;
 };
 
-const genStroke = (i: number, j: number, items: ChanlunK[]): Stroke => ({
-  type: items[j].fractal === 'top' ? 'up' : 'down',
-  start: {
-    timestamp: items[i].timestamp,
-    price: items[j].fractal === 'top' ? items[i].low : items[i].high,
-  },
-  end: {
-    timestamp: items[j].timestamp,
-    price: items[j].fractal === 'top' ? items[j].high : items[j].low,
-  },
-});
-
-const checkIsStroke = (i: number, j: number, items: ChanlunK[]) => {
-  if (!items[i].fractal || !items[j].fractal) {
-    return false;
-  }
-  if (Math.abs(i - j) < 4) {
-    return false;
-  }
-  if (items[i].fractal === 'top' && items[j].fractal === 'bottom' && items[i].high > items[j].low) {
-    return true;
-  }
-  if (items[i].fractal === 'bottom' && items[j].fractal === 'top' && items[i].low < items[j].high) {
-    return true;
-  }
-  return false;
-};
-
 export const computeStrokeSimply = (origin: PriceAndVolumeItem[]) => {
   const strokes: Stroke[] = [];
   const items = getChanlunK(origin);
-  let i = items.findIndex((item) => item.fractal);
+
+  const genStroke = (i: number, j: number): Stroke => ({
+    type: items[j].fractal === 'top' ? 'up' : 'down',
+    start: {
+      timestamp: items[i].timestamp,
+      price: items[j].fractal === 'top' ? items[i].low : items[i].high,
+    },
+    end: {
+      timestamp: items[j].timestamp,
+      price: items[j].fractal === 'top' ? items[j].high : items[j].low,
+    },
+  });
+
+  const checkIsStroke = (i: number, j: number) => {
+    // 如果 i 是 0，第一笔随意
+    if (!i && items[j].fractal) {
+      return true;
+    }
+    if (i >= items.length || j >= items.length) {
+      return false;
+    }
+    if (!items[i].fractal || !items[j].fractal) {
+      return false;
+    }
+    if (Math.abs(i - j) < 4) {
+      return false;
+    }
+    if (
+      items[i].fractal === 'top' &&
+      items[j].fractal === 'bottom' &&
+      items[i].high > items[j].low
+    ) {
+      return true;
+    }
+    if (
+      items[i].fractal === 'bottom' &&
+      items[j].fractal === 'top' &&
+      items[i].low < items[j].high
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  let i = 0;
   let j = i + 1;
   let k = j + 1;
   while (i < items.length && j < items.length && k < items.length) {
     // 找到下一个和 i 不同的分形，且距离需要大于 4
-    if (!checkIsStroke(i, j, items)) {
+    if (!checkIsStroke(i, j)) {
       j++;
       k = j + 1;
       continue;
     }
 
     // 如果能组成新的一笔，保存前一笔，向后移动光标
-    if (checkIsStroke(k, j, items)) {
-      strokes.push(genStroke(i, j, items));
+    if (checkIsStroke(j, k)) {
+      strokes.push(genStroke(i, j));
       i = j;
       j = k;
       k = j + 1;
@@ -149,11 +166,103 @@ export const computeStrokeSimply = (origin: PriceAndVolumeItem[]) => {
     k++;
   }
 
-  if (checkIsStroke(i, j, items)) {
-    strokes.push(genStroke(i, j, items));
+  if (checkIsStroke(i, j)) {
+    strokes.push(genStroke(i, j));
   }
 
   return strokes;
+};
+
+export const computeSegments = (strokes: Stroke[], direction: Stroke['type']) => {
+  const segments: Segment[] = [];
+  const features: Stroke[] = [];
+  for (let i = 0; i < strokes.length; i++) {
+    // 不同向的笔组成同向线段的特征序列
+    if (strokes[i].type === direction) {
+      continue;
+    }
+    if (!features.length) {
+      features.push({ ...strokes[i] });
+      continue;
+    }
+    const last = features[features.length - 1];
+    const lastHigh = Math.max(last.start.price, last.end.price);
+    const lastLow = Math.min(last.start.price, last.end.price);
+    const currentHigh = Math.max(strokes[i].start.price, strokes[i].end.price);
+    const currentLow = Math.min(strokes[i].start.price, strokes[i].end.price);
+    // 前包含后
+    if (lastHigh > currentHigh && lastLow < currentLow) {
+      last.end.price = strokes[i].end.price;
+      continue;
+    }
+    // 后包含前
+    if (lastHigh < currentHigh && lastLow > currentLow) {
+      const lastPrice = last.end.price;
+      features[features.length - 1] = {
+        ...strokes[i],
+        end: {
+          ...strokes[i].end,
+          price: lastPrice,
+        },
+      };
+      continue;
+    }
+    features.push({ ...strokes[i] });
+  }
+
+  const checkIsSameDirection = (i: number, j: number) => {
+    if (i >= features.length || j >= features.length) {
+      return false;
+    }
+    if (i >= j) {
+      return false;
+    }
+    if (direction === 'up') {
+      let flag = true;
+      for (let p = i; p < j; p++) {
+        // 向上的线段的特征序列向下，判断后者的终点是否更高
+        if (!(features[p + 1].end.price > features[p].end.price)) {
+          flag = false;
+          break;
+        }
+      }
+      return flag;
+    }
+    let flag = true;
+    for (let p = i; p < j; p++) {
+      // 向下的线段的特征序列向上，判断后者的终点是否更低
+      if (!(features[p + 1].end.price < features[p].end.price)) {
+        flag = false;
+        break;
+      }
+    }
+    return flag;
+  };
+
+  let i = 0;
+  let j = i + 1;
+  let k = j + 1;
+  while (i < features.length && j < features.length && k < features.length) {
+    // i, j 不能组成当前 direction 的线段
+    if (!checkIsSameDirection(i, j)) {
+      i++;
+      j = i + 1;
+      k = j + 1;
+      continue;
+    }
+    // i, k 能组成线段，再往后延长
+    if (checkIsSameDirection(i, k)) {
+      k++;
+      continue;
+    }
+    // i, k 不能组成线段，即 k 小于 j，还需要判断 k 后续是否能形成新的 direction 方向的线段
+    if (checkIsSameDirection(k, l)) {
+      l++;
+      continue;
+    }
+  }
+
+  return segments;
 };
 
 export const computeStrokesWithDp = (origin: PriceAndVolumeItem[]) => {
@@ -251,8 +360,10 @@ export const computePivotWithDp = (strokes: Stroke[]) => {
       count: 0,
       end: i,
       start: i,
-      low: Number.MIN_SAFE_INTEGER,
-      high: Number.MAX_SAFE_INTEGER,
+      // 下降中枢最小值不能大于结束笔的最低价（即中枢突破）
+      low: strokes[i].type === 'down' ? strokes[i].end.price : Number.MIN_SAFE_INTEGER,
+      // 上升中枢最大值不能小于结束笔的最高价（即中枢突破）
+      high: strokes[i].type === 'up' ? strokes[i].end.price : Number.MAX_SAFE_INTEGER,
     };
 
     // 枚举可行的作为中枢的笔
@@ -270,25 +381,28 @@ export const computePivotWithDp = (strokes: Stroke[]) => {
         continue;
       }
 
+      // 如果开始笔不是从中枢反向突破而来，不能形成中枢
+      if (
+        (strokes[i].type === 'up' && strokes[j].start.price > p.low) ||
+        (strokes[i].type === 'down' && strokes[j].start.price < p.high)
+      ) {
+        continue;
+      }
+
+      // 不能算前后两笔
+      const strokeCount = i - j - 1;
       const newPivot = {
         ...p,
         start: j,
-        count: 1,
+        count: strokeCount,
       };
 
-      // 枚举前一个中枢，使中枢数量最大
+      // 枚举前一个中枢，使中枢占的笔数最多
       for (let k = dp.length - 1; k >= 0; k--) {
-        if (dp[k].end < newPivot.start && dp[k].count + 1 > newPivot.count) {
-          newPivot.count = dp[k].count + 1;
+        if (dp[k].end <= newPivot.start && dp[k].count + strokeCount > newPivot.count) {
+          newPivot.count = dp[k].count + strokeCount;
           newPivot.prev = k;
           // break;
-        }
-        if (
-          dp[k].count + 1 === newPivot.count &&
-          newPivot.prev &&
-          dp[k].end - dp[k].start > dp[newPivot.prev].end - dp[newPivot.prev].start
-        ) {
-          newPivot.prev = k;
         }
       }
 
@@ -318,46 +432,4 @@ export const computePivotWithDp = (strokes: Stroke[]) => {
     });
   }
   return res;
-};
-
-const checkHasCross = (i: number, j: number, strokes: Stroke[]) => {
-  let high = Number.MAX_SAFE_INTEGER;
-  let low = Number.MIN_SAFE_INTEGER;
-  for (let k = i; k <= j; k++) {
-    high = Math.min(high, strokes[k].start.price, strokes[k].end.price);
-    low = Math.max(low, strokes[k].start.price, strokes[k].end.price);
-  }
-  if (high > low) {
-    return true;
-  }
-  return false;
-};
-
-const checkIsPivot = (i: number, j: number, strokes: Stroke[]) => {
-  if (Math.abs(i - j) < 4) {
-    return false;
-  }
-  if (strokes[i].type !== strokes[j].type) {
-    return false;
-  }
-  if (!checkHasCross(i, j, strokes)) {
-    return false;
-  }
-  return true;
-};
-
-export const computePivotSimply = (strokes: Stroke[]) => {
-  const pivots: Pivot[] = [];
-  let i = 0;
-  let j = i + 1;
-  let k = j + 1;
-  while (i < strokes.length && j < strokes.length && k < strokes.length) {
-    if (!checkHasCross(i, j, strokes)) {
-      i++;
-      j = i + 1;
-      continue;
-    }
-  }
-
-  return pivots;
 };

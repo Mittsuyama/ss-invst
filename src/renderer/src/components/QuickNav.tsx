@@ -1,39 +1,30 @@
 import { memo, useEffect, useMemo, useState } from 'react';
+import { useMemoizedFn } from 'ahooks';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
 import { useHistory, useParams } from 'react-router-dom';
-import { useAtomValue } from 'jotai';
+import { RotateCcw, ArrowUpDown, ArrowDown01, ArrowDown10 } from 'lucide-react';
+import { useAtom, useAtomValue } from 'jotai';
 import { AreaChart } from '@visactor/react-vchart';
 import { listGetRequest } from '@/lib/request';
 import { GREEN_RGB, RED_RGB } from '@/lib/constants';
 import { HistoryOption } from '@renderer/types/search';
-import { fetchTrends } from '@renderer/api/klines';
+import { fetchTrendsList } from '@renderer/api/klines';
 import { PriceAndVolumeItem } from '@shared/types/stock';
-import { favStockIdListAtom } from '@renderer/models/detail';
+import { favStockIdListAtom, quickNavDirectionAtom } from '@renderer/models/detail';
+import { Button } from '@/components/ui/button';
+import { Direction } from '@shared/types/meta';
 
-const SAMPLE_RATE = 10;
+interface NavItemProps {
+  detail: HistoryOption;
+  lines: PriceAndVolumeItem[];
+}
 
-const NavItem = memo((props: HistoryOption) => {
+const NavItem = memo((props: NavItemProps) => {
+  const { detail, lines } = props;
+  const { id, title } = detail;
   const { id: idFromParams } = useParams<{ id: string }>();
-  const { id, title } = props;
   const history = useHistory();
-
-  const [lines, setLines] = useState<PriceAndVolumeItem[] | null>(null);
-  const last = lines?.at(-1);
-
-  useEffect(() => {
-    let didCancel = false;
-    (async () => {
-      const list = await fetchTrends(id);
-      if (didCancel) {
-        return;
-      }
-      setLines(list);
-    })();
-    return () => {
-      didCancel = true;
-    };
-  }, [id]);
 
   const diff = useMemo(() => {
     if (!lines) {
@@ -53,7 +44,7 @@ const NavItem = memo((props: HistoryOption) => {
 
   return (
     <div
-      className={clsx('flex px-2 py-2 my-0.5 gap-3 rounded-md items-center cursor-default', {
+      className={clsx('flex px-3 py-2 my-0.5 gap-3 rounded-md items-center cursor-default', {
         'bg-accent': id === idFromParams,
         'hover:bg-accent': id !== idFromParams,
       })}
@@ -70,8 +61,8 @@ const NavItem = memo((props: HistoryOption) => {
             data: {
               values: (lines || []).filter(
                 (item) =>
-                  dayjs(item.timestamp).minute() % SAMPLE_RATE ===
-                  dayjs(last?.timestamp || 0).minute() % SAMPLE_RATE,
+                  // 只显示 9:30 后的数据
+                  dayjs(item.timestamp).hour() > 9 || dayjs(item.timestamp).minute() >= 30,
               ),
             },
             background: 'transparent',
@@ -142,7 +133,7 @@ const NavItem = memo((props: HistoryOption) => {
       </div>
       <div
         style={{
-          background: `rgba(${diff.rate > 0 ? RED_RGB : GREEN_RGB}, 1)`,
+          background: `rgba(${!diff.rate ? '100, 100, 100' : diff.rate > 0 ? RED_RGB : GREEN_RGB}, 1)`,
         }}
         className="w-14 h-6 text-white text-xs flex justify-center items-center rounded-sm"
       >
@@ -154,12 +145,45 @@ const NavItem = memo((props: HistoryOption) => {
 
 NavItem.displayName = 'NavItem';
 
+interface Item {
+  lines: PriceAndVolumeItem[];
+  detail: HistoryOption;
+}
+
 export const QuickNav = memo(() => {
-  // const historyOptions = useAtomValue(historySearchOptionsAtom);
   const favStockIdList = useAtomValue(favStockIdListAtom);
+  const [direction, setDirection] = useAtom(quickNavDirectionAtom);
   const [options, setOptions] = useState<HistoryOption[]>([]);
+  const [list, setList] = useState<Array<Item>>([]);
+
+  const sort = useMemoizedFn((a: Item, b: Item, d: Direction | null) => {
+    if (!d) {
+      return -1;
+    }
+    if (d === 'asc') {
+      return a.lines[a.lines.length - 1].close - b.lines[b.lines.length - 1].close;
+    }
+    return b.lines[b.lines.length - 1].close - a.lines[a.lines.length - 1].close;
+  });
+
+  const fetchList = useMemoizedFn(async (o: HistoryOption[]) => {
+    if (!o.length) {
+      return;
+    }
+    const res = await fetchTrendsList(o.map((item) => item.id));
+    setList(
+      res
+        .map((lines, index) => ({ lines, detail: options[index] }))
+        .sort((a, b) => sort(a, b, direction)),
+    );
+  });
 
   useEffect(() => {
+    fetchList(options);
+  }, [options, fetchList]);
+
+  useEffect(() => {
+    let didCancel = false;
     (async () => {
       const res = await listGetRequest(
         favStockIdList.map((id) => ({
@@ -172,6 +196,9 @@ export const QuickNav = memo(() => {
           },
         })),
       );
+      if (didCancel) {
+        return;
+      }
       setOptions(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         res.map((item: any, index) => {
@@ -180,17 +207,39 @@ export const QuickNav = memo(() => {
             type: 'sec',
             title: data?.shortName || '',
             id: favStockIdList[index],
+            ...data,
           };
         }),
       );
     })();
+    return () => {
+      didCancel = true;
+    };
   }, [favStockIdList]);
 
   return (
     <div className="pl-3 pr-4">
-      <div className="px-2 text-sm text-muted-foreground">最近访问</div>
-      {options.map((option) => (
-        <NavItem key={option.id} {...option} />
+      <div className="px-3 mb-1 text-sm text-muted-foreground space">
+        <div>自选股</div>
+        <div className="space ml-auto">
+          <Button onClick={() => fetchList(options)} size="icon" variant="ghost">
+            <RotateCcw />
+          </Button>
+          <Button
+            onClick={() => {
+              const d = !direction ? 'desc' : direction === 'desc' ? 'asc' : null;
+              setDirection(d);
+              setList(list.slice().sort((a, b) => sort(a, b, d)));
+            }}
+            size="icon"
+            variant="ghost"
+          >
+            {!direction ? <ArrowUpDown /> : direction === 'asc' ? <ArrowDown01 /> : <ArrowDown10 />}
+          </Button>
+        </div>
+      </div>
+      {list.map(({ detail, lines }) => (
+        <NavItem key={detail.id} detail={detail} lines={lines} />
       ))}
     </div>
   );

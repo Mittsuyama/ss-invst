@@ -34,3 +34,5 @@ export enum FileName {
   /** 行业研报列表 */
   INDUSTRY_RESEARCH_REPORT_LIST = 'industry-research-report-list.json',
 }
+
+export type Direction = 'asc' | 'desc';

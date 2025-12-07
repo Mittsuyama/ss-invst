@@ -1,6 +1,7 @@
 import { ChartType } from '@shared/types/stock';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
+import { Direction } from '@shared/types/meta';
 
 export const currentStockIdAtom = atom<string>('');
 export const chartTypeAtom = atomWithStorage<ChartType>(
@@ -22,3 +23,11 @@ export const favStockIdListAtom = atomWithStorage<Array<string>>(
 export const chanlunVisibleAtom = atomWithStorage<boolean>('chanlun-visible', true, undefined, {
   getOnInit: true,
 });
+export const quickNavDirectionAtom = atomWithStorage<Direction | null>(
+  'quick-nav-direction',
+  null,
+  undefined,
+  {
+    getOnInit: true,
+  },
+);

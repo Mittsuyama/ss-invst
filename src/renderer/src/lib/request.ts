@@ -15,7 +15,10 @@ export async function request(
   throw new Error(res.message);
 }
 
-export async function listGetRequest(list: Array<{ url: string; params: unknown }>) {
+export async function listGetRequest(
+  list: Array<{ url: string; params: unknown }>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<Array<any>> {
   const res = await window.electron.ipcRenderer.invoke(RequestType.LIST_GET, list);
   const error = res.find((item) => item.code !== 0);
   if (error) {

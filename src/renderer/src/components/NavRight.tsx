@@ -96,6 +96,8 @@ export const NavRight = memo(() => {
         type: 'history',
       };
     }
+    setIndex(0);
+    setSearchVisible(false);
     if (nh) {
       const newList = historyOptions.filter((item) => item.id !== id);
       setHistoryOptions([nh, ...newList]);
@@ -103,7 +105,6 @@ export const NavRight = memo(() => {
     } else {
       setList([...historyOptions, ...ROUTER_LIST]);
     }
-    setIndex(0);
   });
 
   const { run: onSearch } = useDebounceFn(
