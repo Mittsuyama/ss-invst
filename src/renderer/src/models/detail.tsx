@@ -1,0 +1,24 @@
+import { ChartType } from '@shared/types/stock';
+import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
+
+export const currentStockIdAtom = atom<string>('');
+export const chartTypeAtom = atomWithStorage<ChartType>(
+  'stock-detail-chart-type',
+  ChartType.DAY,
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
+export const favStockIdListAtom = atomWithStorage<Array<string>>(
+  'fav-stock-id-list',
+  [],
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
+export const chanlunVisibleAtom = atomWithStorage<boolean>('chanlun-visible', true, undefined, {
+  getOnInit: true,
+});
