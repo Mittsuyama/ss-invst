@@ -71,7 +71,12 @@ const ROUTER_LIST: RouterOption[] = [
 
 type O = RouterOption | SecOption | CustomOption | HistoryOption;
 
-export const NavRight = memo(() => {
+interface NavRightProps {
+  className?: string;
+}
+
+export const NavRight = memo((props: NavRightProps) => {
+  const { className } = props;
   const history = useHistory();
   const { themeSetting, onThemeSettingChange } = useTheme();
   const [historyOptions, setHistoryOptions] = useAtom(historySearchOptionsAtom);
@@ -290,7 +295,7 @@ export const NavRight = memo(() => {
   };
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className={clsx('flex gap-2 items-center', className)}>
       <Dialog open={searchVisible} onOpenChange={setSearchVisible}>
         <DialogTitle />
         <DialogContent
@@ -328,7 +333,7 @@ export const NavRight = memo(() => {
         onClick={() => setSearchVisible(true)}
       >
         <div>搜索股票/指数/期权</div>
-        <div className="flex gap-1 items-center">
+        <div className="flex gap-1 items-center text-xs">
           <div className="px-2 py-[2px] bg-background border rounded-sm">Ctr/Cmd</div>
           <div className="px-2 py-[2px] bg-background border rounded-sm">K</div>
         </div>

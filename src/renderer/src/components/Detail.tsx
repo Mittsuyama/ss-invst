@@ -110,13 +110,13 @@ export const Detail = memo(() => {
                   ChartType.WEEK,
                   ChartType.MONTH,
                 ].map((c) => (
-                  <TabsTrigger key={c} value={c}>
+                  <TabsTrigger className="font-normal" key={c} value={c}>
                     {chartTypeTittle[c]}
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
-            <ButtonGroup>
+            <ButtonGroup className="text-sm">
               <Button variant="outline" onClick={() => setRefreshCount(refreshCount + 1)}>
                 {/* <RotateCcw /> */}
                 刷新
@@ -148,7 +148,7 @@ export const Detail = memo(() => {
               <Chart
                 overlayVisible={overlayVisible}
                 id={id}
-                defaultZoom={chartType2PeriodTypes[chartType].length > 1 ? 0.2 : 0.28}
+                // defaultZoom={chartType2PeriodTypes[chartType].length > 1 ? 0.2 : 0.28}
                 period={p}
                 setCurrent={setCurrent}
               />

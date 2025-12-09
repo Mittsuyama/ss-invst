@@ -149,7 +149,7 @@ const NavItem = memo((props: NavItemProps) => {
         }}
         className="w-14 h-6 text-white text-xs flex justify-center items-center rounded-sm"
       >
-        {parseFloat((diff.rate * 100).toFixed(2))}%
+        {(diff.rate * 100).toFixed(2)}%
       </div>
     </div>
   );
@@ -167,6 +167,7 @@ export const QuickNav = memo(() => {
   const [direction, setDirection] = useAtom(quickNavDirectionAtom);
   const [options, setOptions] = useState<HistoryOption[]>([]);
   const [list, setList] = useState<Array<Item>>([]);
+  const [loading, setLoading] = useState(false);
 
   const sort = useMemoizedFn((a: Item, b: Item, d: Direction | null) => {
     if (!d) {
@@ -185,12 +186,17 @@ export const QuickNav = memo(() => {
     if (!o.length) {
       return;
     }
-    const res = await fetchTrendsList(o.map((item) => item.id));
-    setList(
-      res
-        .map((lines, index) => ({ lines, detail: options[index] }))
-        .sort((a, b) => sort(a, b, direction)),
-    );
+    try {
+      setLoading(true);
+      const res = await fetchTrendsList(o.map((item) => item.id));
+      setList(
+        res
+          .map((lines, index) => ({ lines, detail: options[index] }))
+          .sort((a, b) => sort(a, b, direction)),
+      );
+    } finally {
+      setLoading(false);
+    }
   });
 
   useEffect(() => {
@@ -233,12 +239,12 @@ export const QuickNav = memo(() => {
   }, [favStockIdList]);
 
   return (
-    <div className="pl-3 pr-4">
+    <div className="pl-3 pr-4 pb-4">
       <div className="px-3 mb-1 text-sm text-muted-foreground space">
         <div>自选股</div>
         <div className="space ml-auto">
           <Button onClick={() => fetchList(options)} size="icon" variant="ghost">
-            <RotateCcw />
+            <RotateCcw className={clsx({ 'animate-spin': loading })} />
           </Button>
           <Button
             onClick={() => {

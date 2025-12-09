@@ -1,4 +1,5 @@
 import { Route, Switch, Redirect, useHistory } from 'react-router-dom';
+import { BadgeJapaneseYen } from 'lucide-react';
 import { RouterKey } from '@/types/global';
 import { Detail } from '@/components/Detail';
 import { Home } from '@/pages/Home';
@@ -57,7 +58,8 @@ function App() {
   return (
     <>
       <div className="w-full h-full overflow-hidden flex flex-col bg-semi-color-bg-0 bg-background text-foreground">
-        <div className="flex-none w-full flex p-4 justify-between">
+        <div className="flex-none w-full py-4 px-6 space">
+          <BadgeJapaneseYen size={20} className="mr-2" />
           <NavigationMenu>
             <NavigationMenuList>
               {ROUTES.filter((item) => !item.hide).map((item) => (
@@ -73,7 +75,7 @@ function App() {
               ))}
             </NavigationMenuList>
           </NavigationMenu>
-          <NavRight />
+          <NavRight className="ml-auto" />
         </div>
         <div className="flex-1 overflow-hidden">
           <Switch>

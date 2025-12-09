@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { useMemoizedFn } from 'ahooks';
 import {
   init,
@@ -17,15 +17,16 @@ import {
   RED_COLOR,
   DARK_GREEN_COLOR,
   DARK_RED_COLOR,
-  periodTitle,
   periodType2MaPeriods,
 } from '@/lib/constants';
 import { themeAtom } from '@/models/global';
 import { fetchKLines } from '@/api/klines';
 import { computePivotWithDp, computeStrokeSimply } from '@shared/lib/chanlun';
+import { scaleInPeriodAtom } from '@renderer/models/detail';
+import { Button } from '@/components/ui/button';
 // import { chanlunComputeRequest } from '@renderer/lib/request';
 
-const STROKE_COLOR = '#888888ce';
+const STROKE_COLOR = '#888888DD';
 // const PIVOT_COLOR = '#00a6ff';
 const UP_PIVOT_COLOR = '#ff8000';
 const DOWN_PIVOT_COLOR = '#a6ff00';
@@ -79,25 +80,27 @@ registerOverlay({
   },
 });
 
+const DEFAULT_SCALE = 0.2;
+
 const CHART_ID_PREFIX = 'detail-klines';
 export const Chart = memo(
   ({
     id,
-    defaultZoom,
     period,
     setCurrent,
     overlayVisible,
   }: {
     id: string;
-    defaultZoom?: number;
     period: PeriodType;
     setCurrent: (item: PriceAndVolumeItem | null) => void;
     overlayVisible: boolean;
   }) => {
     const theme = useAtomValue(themeAtom);
+    const [scaleInPeriod, setScaleInPeriod] = useAtom(scaleInPeriodAtom);
     const [list, setList] = useState<PriceAndVolumeItem[] | null>(null);
     const [chart, setChart] = useState<ChartObject | null>(null);
     const [unchangableOverlayVisible] = useState(overlayVisible);
+    const [unchangableScale] = useState(scaleInPeriod[period]);
 
     const onCandleHover = useMemoizedFn((e: unknown) => {
       if (typeof e === 'object' && e && 'kLineData' in e) {
@@ -186,10 +189,8 @@ export const Chart = memo(
       }
       const chart = init(`${CHART_ID_PREFIX}-${period}`);
       if (chart) {
-        setChart(chart);
         chart.subscribeAction(ActionType.OnCrosshairChange, onCandleHover);
         chart.applyNewData(list);
-        chart.zoomAtTimestamp(defaultZoom ?? 0.15, list[list.length - 1].timestamp);
         chart.setOffsetRightDistance(8);
         chart.setStyles({
           grid: {
@@ -256,18 +257,53 @@ export const Chart = memo(
         chart.createIndicator('VOL');
         chart.createIndicator('KDJ');
         chart.createIndicator('MACD');
+        chart.zoomAtTimestamp(unchangableScale || DEFAULT_SCALE, list[list.length - 1].timestamp);
+        chart.subscribeAction(ActionType.OnZoom, (data) => {
+          const { scale } = (data || {}) as { scale: number };
+          if (scale) {
+            setScaleInPeriod((pre) => ({
+              ...pre,
+              [period]: (pre[period] || DEFAULT_SCALE) * (scale ?? 1),
+            }));
+          }
+        });
+        setChart(chart);
       }
       return () => {
-        dispose('detail-klines');
+        dispose(`${CHART_ID_PREFIX}-${period}`);
       };
-    }, [list, period, defaultZoom, onCandleHover, theme, unchangableOverlayVisible]);
+    }, [
+      list,
+      period,
+      onCandleHover,
+      theme,
+      unchangableOverlayVisible,
+      setScaleInPeriod,
+      unchangableScale,
+    ]);
 
     return (
       <div className="relative border rounded-xl w-full h-full overflow-hidden">
-        <div className="absolute top-2 right-4 text-xs text-muted-foreground">
-          {periodTitle[period]}
+        <div className="absolute top-1 right-1 text-xs text-muted-foreground flex gap-2 z-20">
+          {/* {periodTitle[period]} */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setScaleInPeriod((pre) => ({
+                ...pre,
+                [period]: DEFAULT_SCALE,
+              }));
+              list && chart?.zoomAtTimestamp(DEFAULT_SCALE, list[list.length - 1].timestamp);
+            }}
+          >
+            重置缩放
+          </Button>
         </div>
-        <div id={`${CHART_ID_PREFIX}-${period}`} className="w-full h-full overflow-hidden" />
+        <div
+          id={`${CHART_ID_PREFIX}-${period}`}
+          className="w-full h-full overflow-hidden relative z-10"
+        />
       </div>
     );
   },
