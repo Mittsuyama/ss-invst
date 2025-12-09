@@ -56,16 +56,21 @@ registerFigure<PivotAttrs, PivotStyles>({
     ctx.fillStyle = `${color}33`;
     ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
   },
-  checkEventOn: (_, attrs) => {
+  checkEventOn: ({ x, y }, attrs) => {
     const { x1, y1, x2, y2 } = attrs;
-    return false;
-    return Math.abs(x1 * (y2 - y1)) + Math.abs(y1 * (x2 - x1)) <= ((x2 - x1) * (y2 - y1)) / 2;
+    const xRange = [x1, x2].sort((a, b) => a - b);
+    const yRange = [y1, y2].sort((a, b) => a - b);
+    return x >= xRange[0] && x <= xRange[1] && y >= yRange[0] && y <= yRange[1];
   },
 });
 
 registerOverlay({
   name: 'pivot',
-  totalStep: 2,
+  totalStep: 3,
+  lock: true,
+  needDefaultPointFigure: true,
+  needDefaultXAxisFigure: true,
+  needDefaultYAxisFigure: true,
   createPointFigures: ({ coordinates, overlay }) => {
     return {
       type: 'pivot',
