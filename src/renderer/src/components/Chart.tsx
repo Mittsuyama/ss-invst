@@ -32,6 +32,7 @@ const UP_PIVOT_COLOR = '#ff8000';
 const DOWN_PIVOT_COLOR = '#a6ff00';
 
 const MA_COLORS = ['#888', '#00d9ffaa', '#000dff87', '#a600ff87', '#ff00a287'];
+const KDJ_COLORS = ['#868686c5', '#ffb700', '#f700ffa8'];
 
 interface PivotAttrs {
   x1: number;
@@ -260,7 +261,16 @@ export const Chart = memo(
         );
         // chart.createIndicator('BBI', true, { id: 'candle_pane' });
         chart.createIndicator('VOL');
-        chart.createIndicator('KDJ');
+        chart.createIndicator({
+          name: 'KDJ',
+          styles: {
+            lines: KDJ_COLORS.map((color) => ({
+              color,
+              size: 1,
+            })),
+          },
+        });
+        // chart.createIndicator('KDJ');
         chart.createIndicator('MACD');
         chart.zoomAtTimestamp(unchangableScale || DEFAULT_SCALE, list[list.length - 1].timestamp);
         chart.subscribeAction(ActionType.OnZoom, (data) => {
