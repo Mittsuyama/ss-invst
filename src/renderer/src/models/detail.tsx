@@ -20,6 +20,14 @@ export const favStockIdListAtom = atomWithStorage<Array<string>>(
     getOnInit: true,
   },
 );
+export const watchStockIdListAtom = atomWithStorage<Array<string>>(
+  'watch-stock-id-list',
+  [],
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
 export const chanlunVisibleAtom = atomWithStorage<boolean>('chanlun-visible', true, undefined, {
   getOnInit: true,
 });

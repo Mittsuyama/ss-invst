@@ -111,7 +111,7 @@ export const Option = memo(() => {
   const filteredCallList = callList.filter((item) => item.expire === expire);
   const filteredPutList = putList.filter((item) => item.expire === expire);
 
-  const cellClassName = 'text-center flex-1 py-3';
+  const cellClassName = 'text-center flex-1 py-2';
 
   const onOptionSelectToggle = useMemoizedFn((option: OptionItem, direction: 'buy' | 'sell') => {
     setSelectedOption((prev) =>
@@ -146,7 +146,7 @@ export const Option = memo(() => {
           const itemInList = selectedOption.find((o) => o.code === item.code);
           return (
             <div
-              className={clsx('relative w-full -my-3 text-center py-3 cursor-default', {
+              className={clsx('relative w-full -my-2 text-center py-2 cursor-default', {
                 'ring-2 ring-red-700': itemInList?.direction === 'buy',
                 'ring-2 ring-green-700': itemInList?.direction === 'sell',
               })}
@@ -156,7 +156,7 @@ export const Option = memo(() => {
                 {(Number(value) / 10000).toFixed(4)}
                 <div
                   onClick={() => onOptionSelectToggle(item, 'buy')}
-                  className={clsx('px-2 py-1 rounded-lg', {
+                  className={clsx('px-2 py-1 rounded-full text-xs', {
                     'bg-red-600 hover:bg-red-700 text-white': itemInList?.direction === 'buy',
                     'hover:bg-red-600/20': itemInList?.direction !== 'buy',
                   })}
@@ -165,7 +165,7 @@ export const Option = memo(() => {
                 </div>
                 <div
                   onClick={() => onOptionSelectToggle(item, 'sell')}
-                  className={clsx('px-2 py-1 rounded-lg', {
+                  className={clsx('px-2 py-1 rounded-full text-xs', {
                     'bg-green-600 hover:bg-green-700 text-white': itemInList?.direction === 'sell',
                     'hover:bg-green-600/20': itemInList?.direction !== 'sell',
                   })}
@@ -235,9 +235,9 @@ export const Option = memo(() => {
   });
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex-none flex gap-4 items-center px-4 pt-1 pb-3">
-        <div>选择标的物和到期日</div>
+    <div className="w-full h-full flex flex-col p-6 pt-1 text-sm">
+      <div className="flex-none flex gap-4 items-center px-1 mb-4">
+        <div className="font-bold">期权</div>
         <Select
           value={id}
           onValueChange={(e) => {
@@ -376,10 +376,9 @@ export const Option = memo(() => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="relative flex-1 flex flex-col px-4 py-2 overflow-hidden">
+      <div className="relative p-4 border rounded-2xl flex-1 flex flex-col overflow-hidden">
         {/* Table Header */}
-        <div className="w-full flex-none flex font-bold border-b-2">
+        <div className="w-full flex-none flex border-b">
           {columns
             .slice()
             .reverse()
@@ -397,7 +396,7 @@ export const Option = memo(() => {
         </div>
 
         {/* Table Body */}
-        <div className="flex-1 overflow-y-scroll overflow-x-hidden text-[14px] -mr-4 pb-4">
+        <div className="flex-1 overflow-y-scroll overflow-x-hidden -mr-4 pb-4">
           {filteredCallList.map((_, index) => (
             // Table Row
             <div className="relative w-full flex border-b" key={filteredCallList[index].code}>

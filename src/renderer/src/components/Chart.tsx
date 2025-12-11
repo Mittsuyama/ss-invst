@@ -1,6 +1,5 @@
 import { memo, useEffect, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
-import { useMemoizedFn } from 'ahooks';
 import {
   init,
   dispose,
@@ -108,13 +107,6 @@ export const Chart = memo(
     const [unchangableOverlayVisible] = useState(overlayVisible);
     const [unchangableScale] = useState(scaleInPeriod[period]);
 
-    const onCandleHover = useMemoizedFn((e: unknown) => {
-      if (typeof e === 'object' && e && 'kLineData' in e) {
-        const data = e.kLineData as PriceAndVolumeItem;
-        setCurrent(data);
-      }
-    });
-
     useEffect(() => {
       (async () => {
         if (list && chart) {
@@ -195,7 +187,6 @@ export const Chart = memo(
       }
       const chart = init(`${CHART_ID_PREFIX}-${period}`);
       if (chart) {
-        chart.subscribeAction(ActionType.OnCrosshairChange, onCandleHover);
         chart.applyNewData(list);
         chart.setOffsetRightDistance(8);
         chart.setStyles({
@@ -273,6 +264,12 @@ export const Chart = memo(
         // chart.createIndicator('KDJ');
         chart.createIndicator('MACD');
         chart.zoomAtTimestamp(unchangableScale || DEFAULT_SCALE, list[list.length - 1].timestamp);
+        chart.subscribeAction(ActionType.OnCrosshairChange, (e) => {
+          if (typeof e === 'object' && e && 'kLineData' in e) {
+            const data = e.kLineData as PriceAndVolumeItem;
+            setCurrent(data);
+          }
+        });
         chart.subscribeAction(ActionType.OnZoom, (data) => {
           const { scale } = (data || {}) as { scale: number };
           if (scale) {
@@ -290,11 +287,11 @@ export const Chart = memo(
     }, [
       list,
       period,
-      onCandleHover,
       theme,
       unchangableOverlayVisible,
       setScaleInPeriod,
       unchangableScale,
+      setCurrent,
     ]);
 
     return (
@@ -316,6 +313,7 @@ export const Chart = memo(
           </Button>
         </div>
         <div
+          onMouseOut={() => setCurrent(null)}
           id={`${CHART_ID_PREFIX}-${period}`}
           className="w-full h-full overflow-hidden relative z-10"
         />

@@ -1,7 +1,7 @@
 import { Route, Switch, Redirect, useHistory } from 'react-router-dom';
 import { BadgeJapaneseYen } from 'lucide-react';
 import { RouterKey } from '@/types/global';
-import { Detail } from '@/components/Detail';
+import { ChoiceOverview } from '@/pages/ChoiceOverview';
 import { Home } from '@/pages/Home';
 import { Choice } from '@/pages/Choice';
 import { Filter } from '@/pages/Filter';
@@ -36,7 +36,7 @@ const ROUTES: Array<{
   },
   {
     key: RouterKey.FILTER,
-    title: '筛股',
+    title: '条件选股',
     FC: Filter,
   },
   {
@@ -45,9 +45,9 @@ const ROUTES: Array<{
     FC: Option,
   },
   {
-    key: RouterKey.DETAIL,
-    title: '详情',
-    FC: Detail,
+    key: RouterKey.CHOICE_OVERVIEW,
+    title: '自选股看板',
+    FC: ChoiceOverview,
     hide: true,
   },
 ];

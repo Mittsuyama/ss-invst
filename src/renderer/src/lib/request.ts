@@ -3,7 +3,7 @@ import { RequestType } from '@shared/types/request';
 import type { Pivot, PriceAndVolumeItem, Stroke } from '@shared/types/stock';
 
 export async function request(
-  type: RequestType.GET,
+  type: RequestType.GET | RequestType.POST,
   url: string,
   params?: Record<string, unknown>,
 ) {

@@ -16,6 +16,6 @@ export enum RouterKey {
   /** 设置 */
   SETTINGS = '/settings',
 
-  /** 详情 */
-  DETAIL = '/detail/:id',
+  /** 自选股看板 */
+  CHOICE_OVERVIEW = '/choice-overview/:id',
 }
