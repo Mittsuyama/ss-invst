@@ -11,6 +11,7 @@ import { GREEN_RGB, RED_RGB } from '@/lib/constants';
 import { HistoryOption } from '@renderer/types/search';
 import { fetchTrendsList } from '@renderer/api/klines';
 import { PriceAndVolumeItem } from '@shared/types/stock';
+import { RouterKey } from '@renderer/types/global';
 import { favStockIdListAtom, quickNavDirectionAtom } from '@renderer/models/detail';
 import { Button } from '@/components/ui/button';
 import { Direction } from '@shared/types/meta';
@@ -58,7 +59,7 @@ const NavItem = memo((props: NavItemProps) => {
         'bg-accent': id === idFromParams,
         'hover:bg-accent': id !== idFromParams,
       })}
-      onClick={() => history.push(`/detail/${id}`)}
+      onClick={() => history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', id))}
     >
       <div className="flex-none">
         <div className="text-sm mb-1">{title}</div>

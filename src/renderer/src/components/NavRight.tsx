@@ -87,7 +87,7 @@ export const NavRight = memo((props: NavRightProps) => {
   const onRandom = useMemoizedFn(() => {});
 
   const onSecSelect = useMemoizedFn((id: string) => {
-    history.push(`/detail/${id}`);
+    history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', id));
     const sec = list.find(
       (item) => (item.type === 'sec' || item.type === 'history') && item.id === id,
     );
