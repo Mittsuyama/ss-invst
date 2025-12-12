@@ -3,7 +3,7 @@ import { useMemoizedFn } from 'ahooks';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
 import { useHistory, useParams } from 'react-router-dom';
-import { RotateCcw, ArrowUpDown, ArrowDownNarrowWide, ArrowDownWideNarrow } from 'lucide-react';
+import { RotateCcw, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import { useAtom, useAtomValue } from 'jotai';
 import { AreaChart } from '@visactor/react-vchart';
 import { listGetRequest } from '@/lib/request';
@@ -20,7 +20,7 @@ interface NavItemProps {
   lines: PriceAndVolumeItem[];
 }
 
-const SAMPLE_GAP = 10;
+const SAMPLE_GAP = 5;
 
 const getRate = (lines: PriceAndVolumeItem[]) => {
   const open = lines[0].open;
@@ -258,7 +258,7 @@ export const QuickNav = memo(() => {
             {!direction ? (
               <ArrowUpDown />
             ) : direction === 'asc' ? (
-              <ArrowDownNarrowWide />
+              <ArrowUpNarrowWide />
             ) : (
               <ArrowDownWideNarrow />
             )}
