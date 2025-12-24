@@ -35,6 +35,7 @@ export enum ChartType {
   WEEK_AND_DAY = 'week_and_day',
   DAY_AND_HOUR = 'day_and_hour',
   DAY_AND_FIVE_MINUTE = 'day_and_five_minute',
+  DAY_AND_HALF_HOUR = 'day_and_half_hour',
 }
 
 export interface PriceAndVolumeItem extends KLineData {

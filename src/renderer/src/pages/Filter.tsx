@@ -47,7 +47,7 @@ const COLUMN_ORDER = [
 ];
 
 const CONDITION =
-  '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;周线周期KDJ(J值)<30;';
+  '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;30分钟线周期KDJ(J值)<30;上市时间>2年';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DataRecord = Record<string, any>;
@@ -222,17 +222,14 @@ export const Filter = memo(() => {
                 {records.map((record) => (
                   <TableRow key={record.SECURITY_CODE}>
                     {columns.map((col) => {
-                      if (col.key !== 'SECURITY_CODE') {
+                      if (!['SECURITY_SHORT_NAME'].includes(col.key)) {
                         return <TableCell key={col.key}> {record[col.key]} </TableCell>;
                       }
                       return (
                         <TableCell key={col.key}>
                           <div
                             onClick={() => setCurrent(record)}
-                            className={clsx({
-                              'text-sky-500 hover:opacity-60 hover:cursor-pointer':
-                                col.key === 'SECURITY_CODE',
-                            })}
+                            className="text-slate-500 hover:opacity-60 hover:cursor-pointer"
                           >
                             {record[col.key]}
                           </div>

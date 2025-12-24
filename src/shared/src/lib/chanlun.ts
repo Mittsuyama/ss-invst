@@ -47,6 +47,9 @@ const getChanlunK = (origin: PriceAndVolumeItem[]) => {
   }
   // 标记顶底分形
   for (let i = 0; i < items.length; i++) {
+    if (items[i].enclosed) {
+      continue;
+    }
     // 找到相邻的不被包含的 K 线
     let prev = i - 1;
     let next = i + 1;
