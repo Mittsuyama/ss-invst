@@ -242,6 +242,7 @@ export const computeSegments = (strokes: Stroke[], direction: Stroke['type']) =>
   let i = 0;
   let j = i + 1;
   let k = j + 1;
+  let l = k + 1;
   while (i < features.length && j < features.length && k < features.length) {
     // i, j 不能组成当前 direction 的线段
     if (!checkIsSameDirection(i, j)) {

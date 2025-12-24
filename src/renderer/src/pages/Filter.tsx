@@ -31,13 +31,31 @@ interface Column {
   title: string;
 }
 
+const COLUMN_ORDER = [
+  'SERIAL',
+  'SECURITY_CODE',
+  'SECURITY_SHORT_NAME',
+  'KDJ_J',
+  'NEWEST_PRICE',
+  'CHG',
+  'PETTMDEDUCTED',
+  'ROE_WEIGHT',
+  'PB',
+  'TOAL_MARKET_VALUE',
+  'TRADING_VOLUMES',
+  'TURNOVER_RATE',
+];
+
+const CONDITION =
+  '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;周线周期KDJ(J值)<30;';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DataRecord = Record<string, any>;
 
 export const Filter = memo(() => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
-    pageSize: 20,
+    pageSize: 50,
     page: 1,
   });
   const [total, setTotal] = useState(0);
@@ -64,11 +82,19 @@ export const Filter = memo(() => {
           pageNo: page,
           fingerprint: 'f95cc8cd33dbefa5237c65ac21b3c1b3',
           biz: 'web_ai_select_stocks',
-          keyWordNew: '日线周期KDJ(J值)<5;总市值>100亿;',
+          keyWordNew: CONDITION,
           // customDataNew: '[{"type":"text","value":"日线周期KDJ(J值)<5;总市值>100亿;","extra":""}]',
         },
       );
-      setColumns(res.data.result.columns);
+      setColumns(
+        res.data.result.columns
+          .filter((item) => COLUMN_ORDER.some((c) => item.key.startsWith(c)))
+          .sort((a, b) => {
+            const aIndex = COLUMN_ORDER.findIndex((c) => a.key.startsWith(c));
+            const bIndex = COLUMN_ORDER.findIndex((c) => b.key.startsWith(c));
+            return aIndex - bIndex;
+          }),
+      );
       setTotal(res.data.result.total);
       const list = res.data.result.dataList;
       setRecords(list);
@@ -121,7 +147,7 @@ export const Filter = memo(() => {
     return () => {
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [current]);
+  }, [current, onNext, onPrevious]);
 
   useEffect(() => {
     const code = current?.SECURITY_CODE;
@@ -167,12 +193,14 @@ export const Filter = memo(() => {
 
   return (
     <>
-      <div className={clsx('p-6 pt-0', { 'pointer-events-none opacity-40': loading })}>
-        <div className="space mb-4 px-1">
+      <div
+        className={clsx('h-full p-6 pt-0 flex flex-col', {
+          'pointer-events-none opacity-40': loading,
+        })}
+      >
+        <div className="space mb-4 px-1 flex-none">
           <div className="font-bold mr-4">条件选股</div>
-          <div className="text-sm text-muted-foreground pl-1">
-            {'条件：市值 > 100 亿 & KDJ(J值) < 5'}
-          </div>
+          <div className="text-sm text-muted-foreground pl-1">{CONDITION}</div>
           <div className="ml-auto">
             <Button onClick={() => fetch(pagination.page, pagination.pageSize)} variant="outline">
               <RotateCcw />
@@ -180,92 +208,94 @@ export const Filter = memo(() => {
             </Button>
           </div>
         </div>
-        <div className="p-4 border rounded-2xl">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {columns.map((col) => (
-                  <TableHead key={col.key}>{col.title}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {records.map((record) => (
-                <TableRow key={record.SECURITY_CODE}>
-                  {columns.map((col) => {
-                    if (col.key !== 'SECURITY_CODE') {
-                      return <TableCell key={col.key}> {record[col.key]} </TableCell>;
-                    }
-                    return (
-                      <TableCell key={col.key}>
-                        <div
-                          onClick={() => setCurrent(record)}
-                          className={clsx({
-                            'text-sky-500 hover:opacity-60 hover:cursor-pointer':
-                              col.key === 'SECURITY_CODE',
-                          })}
-                        >
-                          {record[col.key]}
-                        </div>
-                      </TableCell>
-                    );
-                  })}
+        <div className="flex-1 overflow-auto">
+          <div className="p-4 border rounded-2xl">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.map((col) => (
+                    <TableHead key={col.key}>{col.title.replace(/\(.*?不复权\)/, '')}</TableHead>
+                  ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        {total ? (
-          <Pagination className="mt-4">
-            <PaginationContent>
-              <PaginationItem className={clsx({ 'cursor-not-allowed': pagination.page === 1 })}>
-                <PaginationPrevious
-                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-                  className={clsx({ 'pointer-events-none': pagination.page === 1 })}
-                />
-              </PaginationItem>
-              {paginationItemRender(1)}
-
-              {pagination.page - 1 - 1 > 3 ? (
-                <PaginationItem>
-                  <PaginationEllipsis />
+              </TableHeader>
+              <TableBody>
+                {records.map((record) => (
+                  <TableRow key={record.SECURITY_CODE}>
+                    {columns.map((col) => {
+                      if (col.key !== 'SECURITY_CODE') {
+                        return <TableCell key={col.key}> {record[col.key]} </TableCell>;
+                      }
+                      return (
+                        <TableCell key={col.key}>
+                          <div
+                            onClick={() => setCurrent(record)}
+                            className={clsx({
+                              'text-sky-500 hover:opacity-60 hover:cursor-pointer':
+                                col.key === 'SECURITY_CODE',
+                            })}
+                          >
+                            {record[col.key]}
+                          </div>
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {total && maxPage > 1 ? (
+            <Pagination className="mt-4">
+              <PaginationContent>
+                <PaginationItem className={clsx({ 'cursor-not-allowed': pagination.page === 1 })}>
+                  <PaginationPrevious
+                    onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+                    className={clsx({ 'pointer-events-none': pagination.page === 1 })}
+                  />
                 </PaginationItem>
-              ) : null}
+                {paginationItemRender(1)}
 
-              {Array.from({ length: beforeCurrent })
-                .fill(0)
-                .map((_, index) => paginationItemRender(pagination.page - beforeCurrent + index))}
+                {pagination.page - 1 - 1 > 3 ? (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                ) : null}
 
-              {pagination.page !== 1 && pagination.page !== maxPage
-                ? paginationItemRender(pagination.page)
-                : null}
+                {Array.from({ length: beforeCurrent })
+                  .fill(0)
+                  .map((_, index) => paginationItemRender(pagination.page - beforeCurrent + index))}
 
-              {Array.from({ length: afterCurrent })
-                .fill(0)
-                .map((_, index) => paginationItemRender(pagination.page + index + 1))}
+                {pagination.page !== 1 && pagination.page !== maxPage
+                  ? paginationItemRender(pagination.page)
+                  : null}
 
-              {maxPage - pagination.page - 1 > 3 ? (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              ) : null}
+                {Array.from({ length: afterCurrent })
+                  .fill(0)
+                  .map((_, index) => paginationItemRender(pagination.page + index + 1))}
 
-              {paginationItemRender(maxPage)}
-              <PaginationItem
-                className={clsx({
-                  'cursor-not-allowed': pagination.page === maxPage,
-                })}
-              >
-                <PaginationNext
-                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+                {maxPage - pagination.page - 1 > 3 ? (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                ) : null}
+
+                {paginationItemRender(maxPage)}
+                <PaginationItem
                   className={clsx({
-                    'pointer-events-none': pagination.page === maxPage,
+                    'cursor-not-allowed': pagination.page === maxPage,
                   })}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        ) : null}
+                >
+                  <PaginationNext
+                    onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+                    className={clsx({
+                      'pointer-events-none': pagination.page === maxPage,
+                    })}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          ) : null}
+        </div>
       </div>
       <Drawer open={!!current} onClose={() => setCurrent(null)} direction="right">
         <DrawerContent

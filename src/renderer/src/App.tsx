@@ -1,5 +1,5 @@
 import { Route, Switch, Redirect, useHistory } from 'react-router-dom';
-import { BadgeJapaneseYen } from 'lucide-react';
+import { PiggyBank } from 'lucide-react';
 import { RouterKey } from '@/types/global';
 import { ChoiceOverview } from '@/pages/ChoiceOverview';
 import { Home } from '@/pages/Home';
@@ -59,7 +59,10 @@ function App() {
     <>
       <div className="w-full h-full overflow-hidden flex flex-col bg-semi-color-bg-0 bg-background text-foreground">
         <div className="flex-none w-full py-4 px-6 space">
-          <BadgeJapaneseYen size={20} className="mr-2" />
+          {/* <div className="bg-foreground text-background flex rounded-lg p-2 mr-2">
+            <PiggyBank size={18} />
+          </div> */}
+          <PiggyBank className="text-foreground mr-2" strokeWidth={2} size={24} />
           <NavigationMenu>
             <NavigationMenuList>
               {ROUTES.filter((item) => !item.hide).map((item) => (
