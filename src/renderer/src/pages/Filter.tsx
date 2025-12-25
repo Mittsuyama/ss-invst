@@ -4,6 +4,7 @@ import { request } from '@renderer/lib/request';
 import { RequestType } from '@shared/types/request';
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import {
   Table,
   TableBody,
@@ -21,7 +22,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
 
 import { Detail } from '@/components/Detail';
 import { useMemoizedFn } from 'ahooks';
@@ -47,7 +48,7 @@ const COLUMN_ORDER = [
 ];
 
 const CONDITION =
-  '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;30分钟线周期KDJ(J值)<30;上市时间>2年';
+  '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;上市时间>2年';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DataRecord = Record<string, any>;
@@ -299,25 +300,43 @@ export const Filter = memo(() => {
           className="flex flex-col"
           style={{ width: 'calc(100% - 260px)', maxWidth: '100%' }}
         >
-          <div className="flex-none flex items-center p-6">
-            <DrawerHeader className="flex p-0">
-              <DrawerTitle className="mb-0">查看详情</DrawerTitle>
-              {/* <DrawerDescription className="mb-0"></DrawerDescription> */}
-            </DrawerHeader>
-            <div className="flex gap-5 items-center ml-auto">
-              <Button variant="outline" onClick={onPrevious}>
-                <ChevronLeft className="" />
-                上一个
-              </Button>
-              <div>{current?.SECURITY_SHORT_NAME}</div>
-              <Button variant="outline" onClick={onNext}>
-                下一个
-                <ChevronRight className="" />
-              </Button>
-            </div>
-          </div>
-          <div className={clsx('flex-1 overflow-hidden px-6', { 'opacity-25': currentIdLoading })}>
-            {currentId ? <Detail className="h-full" id={currentId} /> : null}
+          {/* <div className="flex-none flex items-center p-6"> */}
+          {/*   <DrawerHeader className="flex p-0"> */}
+          {/*     <DrawerTitle className="mb-0">查看详情</DrawerTitle> */}
+          {/*   </DrawerHeader> */}
+          {/*   <div className="flex gap-5 items-center ml-auto"> */}
+          {/*     <Button variant="outline" onClick={onPrevious}> */}
+          {/*       <ChevronLeft className="" /> */}
+          {/*       上一个 */}
+          {/*     </Button> */}
+          {/*     <div>{current?.SECURITY_SHORT_NAME}</div> */}
+          {/*     <Button variant="outline" onClick={onNext}> */}
+          {/*       下一个 */}
+          {/*       <ChevronRight className="" /> */}
+          {/*     </Button> */}
+          {/*   </div> */}
+          {/* </div> */}
+          <div
+            className={clsx('flex-1 overflow-hidden px-6 pt-5', { 'opacity-25': currentIdLoading })}
+          >
+            {currentId ? (
+              <Detail
+                className="h-full"
+                id={currentId}
+                headerExtra={
+                  <ButtonGroup className="text-sm">
+                    <Button variant="outline" onClick={onPrevious}>
+                      <ChevronLeft className="" />
+                      上一个
+                    </Button>
+                    <Button variant="outline" onClick={onNext}>
+                      下一个
+                      <ChevronRight className="" />
+                    </Button>
+                  </ButtonGroup>
+                }
+              />
+            ) : null}
           </div>
         </DrawerContent>
       </Drawer>

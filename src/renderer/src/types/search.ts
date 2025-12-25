@@ -25,3 +25,15 @@ export interface CustomOption {
   id: string;
   content: ReactNode;
 }
+
+export interface FilterItem {
+  id: string;
+  code: string;
+  name: string;
+  price: number;
+  chg: number;
+  totalMarketValue: number;
+  kdj_day: number;
+  kdj_week: number;
+  kdj_half_hour: number;
+}

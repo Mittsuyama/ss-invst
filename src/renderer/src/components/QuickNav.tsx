@@ -6,13 +6,24 @@ import { useHistory, useParams } from 'react-router-dom';
 import { RotateCcw, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import { useAtom, useAtomValue } from 'jotai';
 import { AreaChart } from '@visactor/react-vchart';
-import { listGetRequest } from '@/lib/request';
-import { GREEN_RGB, RED_RGB } from '@/lib/constants';
-import { HistoryOption } from '@renderer/types/search';
-import { fetchTrendsList } from '@renderer/api/klines';
+import { RequestType } from '@shared/types/request';
+import { request } from '@/lib/request';
+import { GREEN_RGB, RED_RGB, GREEN_COLOR, RED_COLOR } from '@/lib/constants';
+import { FilterItem, HistoryOption } from '@renderer/types/search';
 import { PriceAndVolumeItem } from '@shared/types/stock';
 import { RouterKey } from '@renderer/types/global';
-import { favStockIdListAtom, quickNavDirectionAtom } from '@renderer/models/detail';
+import {
+  favStockIdListAtom,
+  quickNavDirectionAtom,
+  watchStockIdListAtom,
+} from '@renderer/models/detail';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Direction } from '@shared/types/meta';
 
@@ -22,13 +33,6 @@ interface NavItemProps {
 }
 
 const SAMPLE_GAP = 5;
-
-const getRate = (lines: PriceAndVolumeItem[]) => {
-  const open = lines[0].open;
-  const close = lines[lines.length - 1].close;
-  const rate = (close - open) / open;
-  return rate;
-};
 
 const NavItem = memo((props: NavItemProps) => {
   const { detail, lines } = props;
@@ -158,42 +162,133 @@ const NavItem = memo((props: NavItemProps) => {
 
 NavItem.displayName = 'NavItem';
 
-interface Item {
-  lines: PriceAndVolumeItem[];
-  detail: HistoryOption;
+interface SimpleItemProps {
+  detail: FilterItem;
 }
 
+const SimpleItem = memo((props: SimpleItemProps) => {
+  const { detail } = props;
+  const { id, code, name, price, chg } = detail;
+
+  const history = useHistory();
+  const { id: idFromParams } = useParams<{ id: string }>();
+
+  const kdjRender = (value?: number) => {
+    if (typeof value !== 'number') {
+      return <div className="text-foreground">-</div>;
+    }
+    return (
+      <div
+        className="flex-1 text-muted-foreground"
+        style={value >= 90 ? { color: RED_COLOR } : value < 10 ? { color: GREEN_COLOR } : {}}
+      >
+        {value.toFixed(1)}
+        <span
+          className="ml-1"
+          style={{ visibility: value >= 10 && value < 90 ? 'hidden' : 'visible' }}
+        >
+          {value >= 90 ? '▲' : value < 10 ? '▼' : '▼'}
+        </span>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className={clsx('flex px-3 py-2 my-0.5 gap-3 rounded-md items-center cursor-default', {
+        'bg-accent': id === idFromParams,
+        'hover:bg-accent': id !== idFromParams,
+      })}
+      onClick={() => history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', id))}
+    >
+      <div className="flex-none">
+        <div className="text-sm mb-1">{name}</div>
+        <div className="text-xs text-muted-foreground">{code}</div>
+      </div>
+      <div className="ml-auto mr-3 flex flex-col items-end text-xs font-mono">
+        {kdjRender(detail.kdj_week)}
+        {kdjRender(detail.kdj_day)}
+        {/* {kdjRender(detail.kdj_half_hour)} */}
+      </div>
+      <div className="flex-none flex flex-col items-center">
+        <div
+          style={{
+            background: `rgba(${!chg ? '100, 100, 100' : chg > 0 ? RED_RGB : GREEN_RGB}, 1)`,
+          }}
+          className="w-14 h-6 text-white text-xs flex justify-center items-center rounded-sm mb-1"
+        >
+          {chg.toFixed(2)}%
+        </div>
+        <div className="text-xs text-muted-foreground">{price}</div>
+      </div>
+    </div>
+  );
+});
+
+SimpleItem.displayName = 'SimpleItem';
+
 export const QuickNav = memo(() => {
+  const [type, setType] = useState('watch');
   const favStockIdList = useAtomValue(favStockIdListAtom);
+  const watchIdList = useAtomValue(watchStockIdListAtom);
   const [direction, setDirection] = useAtom(quickNavDirectionAtom);
-  const [options, setOptions] = useState<HistoryOption[]>([]);
-  const [list, setList] = useState<Array<Item>>([]);
+  const [options, setOptions] = useState<FilterItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const sort = useMemoizedFn((a: Item, b: Item, d: Direction | null) => {
+  const idList = useMemo(
+    () =>
+      // type === 'choice' ? favStockIdList : Array.from(new Set([...favStockIdList, ...watchIdList])),
+      type === 'choice' ? favStockIdList : watchIdList,
+    [type, favStockIdList, watchIdList],
+  );
+
+  const sort = useMemoizedFn((a: FilterItem, b: FilterItem, d: Direction | null) => {
     if (!d) {
-      return (
-        favStockIdList.findIndex((id) => id === a.detail.id) -
-        favStockIdList.findIndex((id) => id === b.detail.id)
-      );
+      return b.totalMarketValue - a.totalMarketValue;
     }
     if (d === 'asc') {
-      return getRate(a.lines) - getRate(b.lines);
+      return a.kdj_week - b.kdj_week;
     }
-    return getRate(b.lines) - getRate(a.lines);
+    return b.kdj_week - a.kdj_week;
   });
 
-  const fetchList = useMemoizedFn(async (o: HistoryOption[]) => {
-    if (!o.length) {
-      return;
-    }
+  const fetchFilterList = useMemoizedFn(async (ids: string[], d = direction) => {
     try {
       setLoading(true);
-      const res = await fetchTrendsList(o.map((item) => item.id));
-      setList(
-        res
-          .map((lines, index) => ({ lines, detail: options[index] }))
-          .sort((a, b) => sort(a, b, direction)),
+      const res = await request(
+        RequestType.POST,
+        'https://np-tjxg-g.eastmoney.com/api/smart-tag/stock/v3/pw/search-code',
+        {
+          pageSize: 100,
+          pageNo: 1,
+          fingerprint: 'f95cc8cd33dbefa5237c65ac21b3c1b3',
+          biz: 'web_ai_select_stocks',
+          keyWordNew: `${ids.map((item) => item.split('.')[1]).join(';')};周线周期KDJ(J值);日线周期KDJ(J值);30分钟线周期KDJ(J值)`,
+        },
+      );
+      setOptions(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (res.data.result.dataList as any[])
+          .map<FilterItem>((item) => {
+            const keys = Object.keys(item);
+            const totakMarketValue = keys.find((key) => key.includes('TOAL_MARKET_VALUE')) || '';
+            const kdjDayKey = keys.find((key) => key.includes('KDJ_J') && !key.includes('<')) || '';
+            const kdjWeekKey = keys.find((key) => key.includes('KDJ_J<80>')) || '';
+            const kdjHalfHourKey = keys.find((key) => key.includes('KDJ_J<40>')) || '';
+            const code = item['SECURITY_CODE'];
+            return {
+              id: ids.find((id) => id.includes(code)) || '',
+              code,
+              name: item['SECURITY_SHORT_NAME'],
+              price: Number(item['NEWEST_PRICE']),
+              chg: Number(item['CHG']),
+              totalMarketValue: Number(item[totakMarketValue].replace('亿', '')),
+              kdj_day: Number(item[kdjDayKey]),
+              kdj_week: Number(item[kdjWeekKey]),
+              kdj_half_hour: Number(item[kdjHalfHourKey]),
+            };
+          })
+          .sort((a, b) => sort(a, b, d)),
       );
     } finally {
       setLoading(false);
@@ -201,57 +296,30 @@ export const QuickNav = memo(() => {
   });
 
   useEffect(() => {
-    fetchList(options);
-  }, [options, fetchList]);
-
-  useEffect(() => {
-    let didCancel = false;
-    (async () => {
-      const res = await listGetRequest(
-        favStockIdList.map((id) => ({
-          url: 'https://search-codetable.eastmoney.com/codetable/search/web',
-          params: {
-            client: 'web',
-            keyword: id.split('.')[1],
-            pageIndex: 1,
-            pageSize: 1,
-          },
-        })),
-      );
-      if (didCancel) {
-        return;
-      }
-      setOptions(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        res.map((item: any, index) => {
-          const data = item?.result?.[0];
-          return {
-            type: 'sec',
-            title: data?.shortName || '',
-            id: favStockIdList[index],
-            ...data,
-          };
-        }),
-      );
-    })();
-    return () => {
-      didCancel = true;
-    };
-  }, [favStockIdList]);
+    fetchFilterList(idList);
+  }, [idList, fetchFilterList]);
 
   return (
-    <div className="pl-3 pr-4 pb-4">
-      <div className="px-3 mb-1 text-sm text-muted-foreground space">
-        <div>自选股</div>
+    <div className="pb-4 h-full flex flex-col">
+      <div className="flex-none px-5 pt-1 mb-1 text-sm text-muted-foreground space">
+        <Select value={type} onValueChange={setType}>
+          <SelectTrigger size="sm">
+            <SelectValue placeholder="类型" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="watch">关注</SelectItem>
+            <SelectItem value="choice">自选</SelectItem>
+          </SelectContent>
+        </Select>
         <div className="space ml-auto">
-          <Button onClick={() => fetchList(options)} size="icon" variant="ghost">
+          <Button onClick={() => fetchFilterList(idList)} size="icon" variant="ghost">
             <RotateCcw className={clsx({ 'animate-spin': loading })} />
           </Button>
           <Button
             onClick={() => {
               const d = !direction ? 'desc' : direction === 'desc' ? 'asc' : null;
               setDirection(d);
-              setList(list.slice().sort((a, b) => sort(a, b, d)));
+              setOptions(options.slice().sort((a, b) => sort(a, b, d)));
             }}
             size="icon"
             variant="ghost"
@@ -266,9 +334,16 @@ export const QuickNav = memo(() => {
           </Button>
         </div>
       </div>
-      {list.map(({ detail, lines }) => (
-        <NavItem key={detail.id} detail={detail} lines={lines} />
-      ))}
+      <div className="flex-none flex px-6 mt-3 mb-1 justify-between text-sm text-muted-foreground">
+        <div>名称</div>
+        <div>KDJ (周/日)</div>
+        <div>涨跌幅</div>
+      </div>
+      <div className="flex-1 overflow-auto px-3">
+        {options.map((detail) => (
+          <SimpleItem key={detail.id} detail={detail} />
+        ))}
+      </div>
     </div>
   );
 });

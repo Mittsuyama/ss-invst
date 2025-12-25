@@ -1,7 +1,8 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, ReactNode, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
+import { Eye, EyeOff, HeartOff, Heart, Webhook, WebhookOff } from 'lucide-react';
 import { ChartType, PriceAndVolumeItem, StockInfo } from '@shared/types/stock';
 import { chartType2PeriodTypes, chartTypeTittle } from '@/lib/constants';
 import {
@@ -27,10 +28,11 @@ import { Chart } from './Chart';
 interface DetailProps {
   id: string;
   className?: string;
+  headerExtra?: ReactNode;
 }
 
 export const Detail = memo((props: DetailProps) => {
-  const { id, className } = props;
+  const { id, className, headerExtra } = props;
   const history = useHistory();
   const theme = useAtomValue(themeAtom);
   const [watchIdList, setWatchIdList] = useAtom(watchStockIdListAtom);
@@ -131,35 +133,44 @@ export const Detail = memo((props: DetailProps) => {
               {/* <RotateCcw /> */}
               刷新
             </Button>
-            <Button variant="outline" onClick={() => setOverlayVisible((pre) => !pre)}>
-              {/* <RotateCcw /> */}
-              {overlayVisible ? '关闭' : '开启'}缠论
+            <Button
+              className={clsx({
+                'bg-secondary': overlayVisible,
+              })}
+              variant="outline"
+              onClick={() => setOverlayVisible((pre) => !pre)}
+            >
+              {overlayVisible ? <Webhook /> : <WebhookOff />}缠论
             </Button>
             {watchIdList.includes(id) ? (
               <Button
+                className="bg-secondary"
                 variant="outline"
                 onClick={() => setWatchIdList(watchIdList.filter((item) => item !== id))}
               >
-                删除关注
+                <EyeOff /> 关注
               </Button>
             ) : (
               <Button variant="outline" onClick={() => setWatchIdList([...watchIdList, id])}>
-                添加关注
+                <Eye /> 关注
               </Button>
             )}
             {favIdList.includes(id) ? (
               <Button
+                className="bg-secondary"
                 variant="outline"
                 onClick={() => setFavIdList(favIdList.filter((item) => item !== id))}
               >
-                删除自选
+                <HeartOff /> 自选
               </Button>
             ) : (
               <Button variant="outline" onClick={() => setFavIdList([...favIdList, id])}>
-                添加自选
+                <Heart />
+                自选
               </Button>
             )}
           </ButtonGroup>
+          {headerExtra}
         </div>
       </div>
       <div className="flex-1 flex overflow-hidden gap-6 pb-6">
