@@ -17,7 +17,7 @@ import {
   Search,
 } from 'lucide-react';
 import { RouterKey } from '@/types/global';
-import { RouterOption, SecOption, CustomOption, HistoryOption } from '@/types/search';
+import { RouterOption, SecOption, CustomOption, HistoryOption, FilterItem } from '@/types/search';
 import { useTheme } from '@/hooks/use-theme';
 import {
   DropdownMenu,
@@ -30,6 +30,7 @@ import { Dialog, DialogTitle, DialogContent } from '@/components/ui/dialog';
 import { RequestType } from '@shared/types/request';
 import { request } from '@/lib/request';
 import { historySearchOptionsAtom } from '@renderer/models/search';
+import { fetchFilterList } from '@renderer/api/stock';
 
 const ROUTER_LIST: RouterOption[] = [
   {
@@ -82,9 +83,25 @@ export const NavRight = memo((props: NavRightProps) => {
   const [historyOptions, setHistoryOptions] = useAtom(historySearchOptionsAtom);
   const [searchVisible, setSearchVisible] = useState(false);
   const [list, setList] = useState<Array<O>>([...historyOptions, ...ROUTER_LIST]);
+  const [candidates, setCadidates] = useState<FilterItem[] | null>(null);
   const [index, setIndex] = useState(0);
 
-  const onRandom = useMemoizedFn(() => {});
+  const onRandom = useMemoizedFn(() => {
+    if (!candidates) {
+      return;
+    }
+    const item = candidates.shift();
+    if (item) {
+      setCadidates([...candidates, item]);
+      history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', item.id));
+    }
+  });
+
+  useEffect(() => {
+    fetchFilterList(
+      '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;上市时间>2年',
+    ).then(({ list }) => setCadidates(list.sort(() => Math.random() - 0.5)));
+  }, []);
 
   const onSecSelect = useMemoizedFn((id: string) => {
     history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', id));
@@ -352,7 +369,12 @@ export const NavRight = memo((props: NavRightProps) => {
 
       <Tooltip>
         <TooltipTrigger className="rounded-md">
-          <div className="p-2 hover:bg-muted rounded-md">
+          <div
+            onClick={onRandom}
+            className={clsx('p-2 hover:bg-muted rounded-md', {
+              'opacity-75 pointer-events-none': !candidates,
+            })}
+          >
             <Clover size={17} />
           </div>
         </TooltipTrigger>

@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from 'react';
+import { useMemoizedFn } from 'ahooks';
 import clsx from 'clsx';
 import { request } from '@renderer/lib/request';
 import { RequestType } from '@shared/types/request';
@@ -23,14 +24,9 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
-
 import { Detail } from '@/components/Detail';
-import { useMemoizedFn } from 'ahooks';
-
-interface Column {
-  key: string;
-  title: string;
-}
+import { fetchFilterList } from '@renderer/api/stock';
+import { FilterColumn } from '@renderer/types/search';
 
 const COLUMN_ORDER = [
   'SERIAL',
@@ -60,7 +56,7 @@ export const Filter = memo(() => {
     page: 1,
   });
   const [total, setTotal] = useState(0);
-  const [columns, setColumns] = useState<Column[]>([]);
+  const [columns, setColumns] = useState<FilterColumn[]>([]);
   const [records, setRecords] = useState<DataRecord[]>([]);
   const [current, setCurrent] = useState<DataRecord | null>(null);
   const [currentId, setCurrentId] = useState('');
@@ -75,20 +71,9 @@ export const Filter = memo(() => {
     try {
       const lastIndex = records.findIndex((item) => item.SECURITY_CODE === current?.SECURITY_CODE);
       setLoading(true);
-      const res = await request(
-        RequestType.POST,
-        'https://np-tjxg-g.eastmoney.com/api/smart-tag/stock/v3/pw/search-code',
-        {
-          pageSize: pageSize,
-          pageNo: page,
-          fingerprint: 'f95cc8cd33dbefa5237c65ac21b3c1b3',
-          biz: 'web_ai_select_stocks',
-          keyWordNew: CONDITION,
-          // customDataNew: '[{"type":"text","value":"日线周期KDJ(J值)<5;总市值>100亿;","extra":""}]',
-        },
-      );
+      const { list, total, columns } = await fetchFilterList(CONDITION, { page, pageSize });
       setColumns(
-        res.data.result.columns
+        columns
           .filter((item) => COLUMN_ORDER.some((c) => item.key.startsWith(c)))
           .sort((a, b) => {
             const aIndex = COLUMN_ORDER.findIndex((c) => a.key.startsWith(c));
@@ -96,8 +81,7 @@ export const Filter = memo(() => {
             return aIndex - bIndex;
           }),
       );
-      setTotal(res.data.result.total);
-      const list = res.data.result.dataList;
+      setTotal(total);
       setRecords(list);
       if (current && list?.length) {
         if (lastIndex === 0) {

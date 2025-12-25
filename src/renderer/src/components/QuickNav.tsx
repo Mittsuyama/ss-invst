@@ -173,29 +173,30 @@ const SimpleItem = memo((props: SimpleItemProps) => {
   const history = useHistory();
   const { id: idFromParams } = useParams<{ id: string }>();
 
-  const kdjRender = (value?: number) => {
+  const kdjRender = (value?: number, label?: string) => {
     if (typeof value !== 'number') {
       return <div className="text-foreground">-</div>;
     }
     return (
       <div
-        className="flex-1 text-muted-foreground"
+        className="flex-1 text-muted-foreground flex items-center"
         style={value >= 90 ? { color: RED_COLOR } : value < 10 ? { color: GREEN_COLOR } : {}}
       >
         {value.toFixed(1)}
-        <span
-          className="ml-1"
+        <div
+          className="ml-2 flex items-center"
           style={{ visibility: value >= 10 && value < 90 ? 'hidden' : 'visible' }}
         >
-          {value >= 90 ? '▲' : value < 10 ? '▼' : '▼'}
-        </span>
+          <div className="pb-0.5">{value >= 90 ? '▲' : value < 10 ? '▼' : '▼'}</div>
+          <div className="ml-1">{label}</div>
+        </div>
       </div>
     );
   };
 
   return (
     <div
-      className={clsx('flex px-3 py-2 my-0.5 gap-3 rounded-md items-center cursor-default', {
+      className={clsx('flex px-3 py-2 my-0.5 rounded-md items-center cursor-default', {
         'bg-accent': id === idFromParams,
         'hover:bg-accent': id !== idFromParams,
       })}
@@ -205,9 +206,9 @@ const SimpleItem = memo((props: SimpleItemProps) => {
         <div className="text-sm mb-1">{name}</div>
         <div className="text-xs text-muted-foreground">{code}</div>
       </div>
-      <div className="ml-auto mr-3 flex flex-col items-end text-xs font-mono">
-        {kdjRender(detail.kdj_week)}
-        {kdjRender(detail.kdj_day)}
+      <div className="ml-auto mr-7 flex flex-col items-end text-xs font-mono">
+        {kdjRender(detail.kdj_week, 'W')}
+        {kdjRender(detail.kdj_day, 'D')}
         {/* {kdjRender(detail.kdj_half_hour)} */}
       </div>
       <div className="flex-none flex flex-col items-center">
@@ -339,7 +340,7 @@ export const QuickNav = memo(() => {
         <div>KDJ (周/日)</div>
         <div>涨跌幅</div>
       </div>
-      <div className="flex-1 overflow-auto px-3">
+      <div className="flex-1 overflow-auto px-3 no-scrollbar">
         {options.map((detail) => (
           <SimpleItem key={detail.id} detail={detail} />
         ))}

@@ -9,7 +9,7 @@ export const ChoiceOverview = memo(() => {
 
   return (
     <div className="w-full h-full bg-background text-foreground z-50 overflow-hidden flex">
-      <div className="flex-none w-64 overflow-x-hidden overflow-y-auto no-scrollbar">
+      <div className="flex-none w-68 overflow-x-hidden overflow-y-auto no-scrollbar">
         <QuickNav />
       </div>
       <Detail id={id} className="flex-1 pr-4" />

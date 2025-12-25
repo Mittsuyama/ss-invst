@@ -1,4 +1,5 @@
 import { request } from '@/lib/request';
+import { FilterColumn, FilterItem } from '@renderer/types/search';
 import { RequestType } from '@shared/types/request';
 import { StockInfo } from '@shared/types/stock';
 
@@ -66,5 +67,49 @@ export const fetchStockInfo = async (id: string): Promise<StockInfo> => {
     price,
     changeRate,
     createTime,
+  };
+};
+
+export const fetchFilterList = async (
+  rule: string,
+  options?: { pageSize: number; page: number },
+) => {
+  const { page = 1, pageSize = 100 } = options || {};
+  const res = await request(
+    RequestType.POST,
+    'https://np-tjxg-g.eastmoney.com/api/smart-tag/stock/v3/pw/search-code',
+    {
+      pageSize,
+      pageNo: page,
+      fingerprint: 'f95cc8cd33dbefa5237c65ac21b3c1b3',
+      biz: 'web_ai_select_stocks',
+      keyWordNew: rule,
+    },
+  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const list = (res.data.result.dataList as any[]).map<FilterItem>((item) => {
+    const keys = Object.keys(item);
+    const totakMarketValue = keys.find((key) => key.includes('TOAL_MARKET_VALUE')) || '';
+    const kdjDayKey = keys.find((key) => key.includes('KDJ_J') && !key.includes('<')) || '';
+    const kdjWeekKey = keys.find((key) => key.includes('KDJ_J<80>')) || '';
+    const kdjHalfHourKey = keys.find((key) => key.includes('KDJ_J<40>')) || '';
+    const code = item['SECURITY_CODE'];
+    return {
+      id: `${item['MARKET_NUM']}.${code}`,
+      code,
+      name: item['SECURITY_SHORT_NAME'],
+      price: Number(item['NEWEST_PRICE']),
+      chg: Number(item['CHG']),
+      totalMarketValue: Number(item[totakMarketValue].replace('亿', '')),
+      kdj_day: Number(item[kdjDayKey]),
+      kdj_week: Number(item[kdjWeekKey]),
+      kdj_half_hour: Number(item[kdjHalfHourKey]),
+    };
+  });
+
+  return {
+    list,
+    total: res.data.result.total as number,
+    columns: res.data.result.columns as FilterColumn[],
   };
 };

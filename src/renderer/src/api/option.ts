@@ -48,7 +48,6 @@ export const fetchOptionListWithSecid = async (secid: string, type: OptionType) 
     fs: `m:${mMap[sType] || '10'}+c:${code}+t:${tMap[sType]?.[type] || '174'}`,
     fields: fn.map((n) => `f${n}`).join(','),
   });
-  console.log(res);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (res.data.diff as any[]).map<OptionItem>((item) => {

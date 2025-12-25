@@ -37,3 +37,8 @@ export interface FilterItem {
   kdj_week: number;
   kdj_half_hour: number;
 }
+
+export interface FilterColumn {
+  key: string;
+  title: string;
+}

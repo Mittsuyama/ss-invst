@@ -135,7 +135,7 @@ export const Detail = memo((props: DetailProps) => {
             </Button>
             <Button
               className={clsx({
-                'bg-secondary': overlayVisible,
+                'bg-secondary hover:bg-foreground/7': overlayVisible,
               })}
               variant="outline"
               onClick={() => setOverlayVisible((pre) => !pre)}
@@ -144,7 +144,7 @@ export const Detail = memo((props: DetailProps) => {
             </Button>
             {watchIdList.includes(id) ? (
               <Button
-                className="bg-secondary"
+                className="bg-secondary hover:bg-foreground/7"
                 variant="outline"
                 onClick={() => setWatchIdList(watchIdList.filter((item) => item !== id))}
               >
@@ -157,7 +157,7 @@ export const Detail = memo((props: DetailProps) => {
             )}
             {favIdList.includes(id) ? (
               <Button
-                className="bg-secondary"
+                className="bg-secondary hover:bg-foreground/7"
                 variant="outline"
                 onClick={() => setFavIdList(favIdList.filter((item) => item !== id))}
               >
