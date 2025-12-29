@@ -116,6 +116,7 @@ export const Detail = memo((props: DetailProps) => {
             <TabsList>
               {[
                 ChartType.WEEK_AND_DAY,
+                ChartType.DAY_AND_FIVE_MINUTE,
                 ChartType.DAY_AND_HALF_HOUR,
                 ChartType.FIVE_MINUTE,
                 ChartType.DAY,
@@ -135,37 +136,37 @@ export const Detail = memo((props: DetailProps) => {
             </Button>
             <Button
               className={clsx({
-                'bg-secondary hover:bg-foreground/7': overlayVisible,
+                'font-bold bg-secondary': overlayVisible,
               })}
               variant="outline"
               onClick={() => setOverlayVisible((pre) => !pre)}
             >
-              {overlayVisible ? <Webhook /> : <WebhookOff />}缠论
+              {overlayVisible ? <Webhook strokeWidth={3} /> : <WebhookOff />}缠论
             </Button>
             {watchIdList.includes(id) ? (
               <Button
-                className="bg-secondary hover:bg-foreground/7"
+                className="font-bold bg-secondary"
                 variant="outline"
                 onClick={() => setWatchIdList(watchIdList.filter((item) => item !== id))}
               >
-                <EyeOff /> 关注
+                <Eye strokeWidth={3} /> 关注
               </Button>
             ) : (
               <Button variant="outline" onClick={() => setWatchIdList([...watchIdList, id])}>
-                <Eye /> 关注
+                <EyeOff /> 关注
               </Button>
             )}
             {favIdList.includes(id) ? (
               <Button
-                className="bg-secondary hover:bg-foreground/7"
+                className="font-bold bg-secondary"
                 variant="outline"
                 onClick={() => setFavIdList(favIdList.filter((item) => item !== id))}
               >
-                <HeartOff /> 自选
+                <Heart strokeWidth={3} /> 自选
               </Button>
             ) : (
               <Button variant="outline" onClick={() => setFavIdList([...favIdList, id])}>
-                <Heart />
+                <HeartOff />
                 自选
               </Button>
             )}
