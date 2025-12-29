@@ -26,7 +26,7 @@ import {
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Detail } from '@/components/Detail';
 import { fetchFilterList } from '@renderer/api/stock';
-import { FilterColumn } from '@renderer/types/search';
+import { FilterColumn, FilterItem } from '@renderer/types/search';
 
 const COLUMN_ORDER = [
   'SERIAL',
@@ -46,9 +46,6 @@ const COLUMN_ORDER = [
 const CONDITION =
   '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;上市时间>2年';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DataRecord = Record<string, any>;
-
 export const Filter = memo(() => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -57,8 +54,8 @@ export const Filter = memo(() => {
   });
   const [total, setTotal] = useState(0);
   const [columns, setColumns] = useState<FilterColumn[]>([]);
-  const [records, setRecords] = useState<DataRecord[]>([]);
-  const [current, setCurrent] = useState<DataRecord | null>(null);
+  const [records, setRecords] = useState<FilterItem[]>([]);
+  const [current, setCurrent] = useState<FilterItem | null>(null);
   const [currentId, setCurrentId] = useState('');
   const [currentIdLoading, setCurrentIdLoading] = useState(false);
 
@@ -69,7 +66,7 @@ export const Filter = memo(() => {
 
   const fetch = useMemoizedFn(async (page: number, pageSize: number) => {
     try {
-      const lastIndex = records.findIndex((item) => item.SECURITY_CODE === current?.SECURITY_CODE);
+      const lastIndex = records.findIndex((item) => item.id === current?.id);
       setLoading(true);
       const { list, total, columns } = await fetchFilterList(CONDITION, { page, pageSize });
       setColumns(
@@ -96,7 +93,7 @@ export const Filter = memo(() => {
   });
 
   const onPrevious = useMemoizedFn(() => {
-    const index = records.findIndex((item) => item.SECURITY_CODE === current?.SECURITY_CODE);
+    const index = records.findIndex((item) => item.id === current?.id);
     if (index === -1) {
       return;
     }
@@ -108,7 +105,7 @@ export const Filter = memo(() => {
   });
 
   const onNext = useMemoizedFn(() => {
-    const index = records.findIndex((item) => item.SECURITY_CODE === current?.SECURITY_CODE);
+    const index = records.findIndex((item) => item.id === current?.id);
     if (index === -1) {
       return;
     }
@@ -135,8 +132,7 @@ export const Filter = memo(() => {
   }, [current, onNext, onPrevious]);
 
   useEffect(() => {
-    const code = current?.SECURITY_CODE;
-    if (!code) {
+    if (!current?.code) {
       return;
     }
     (async () => {
@@ -147,7 +143,7 @@ export const Filter = memo(() => {
           'https://search-codetable.eastmoney.com/codetable/search/web',
           {
             client: 'web',
-            keyword: code,
+            keyword: current.code,
             pageIndex: 1,
             pageSize: 20,
           },
@@ -205,13 +201,13 @@ export const Filter = memo(() => {
               </TableHeader>
               <TableBody>
                 {records.map((record) => (
-                  <TableRow key={record.SECURITY_CODE}>
+                  <TableRow key={record.id}>
                     {columns.map((col) => {
                       if (!['SECURITY_SHORT_NAME'].includes(col.key)) {
-                        return <TableCell key={col.key}> {record[col.key]} </TableCell>;
+                        return <TableCell key={col.key}>{record[col.key]}</TableCell>;
                       }
                       return (
-                        <TableCell key={col.key}>
+                        <TableCell key={`${record.id}-${col.key}`}>
                           <div
                             onClick={() => setCurrent(record)}
                             className="text-slate-500 hover:opacity-60 hover:cursor-pointer"

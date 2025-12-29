@@ -86,22 +86,27 @@ export const NavRight = memo((props: NavRightProps) => {
   const [candidates, setCadidates] = useState<FilterItem[] | null>(null);
   const [index, setIndex] = useState(0);
 
-  const onRandom = useMemoizedFn(() => {
-    if (!candidates) {
-      return;
+  const onRandom = useMemoizedFn(async () => {
+    let list = candidates;
+    if (!list?.length) {
+      const res = await fetchFilterList(
+        '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;上市时间>2年',
+      );
+      res.list.sort(() => Math.random() - 0.5);
+      list = res.list;
     }
-    const item = candidates.shift();
+    const item = list.shift();
     if (item) {
-      setCadidates([...candidates, item]);
+      setCadidates(list);
       history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', item.id));
     }
   });
 
-  useEffect(() => {
-    fetchFilterList(
-      '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;上市时间>2年',
-    ).then(({ list }) => setCadidates(list.sort(() => Math.random() - 0.5)));
-  }, []);
+  // useEffect(() => {
+  //   fetchFilterList(
+  //     '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;上市时间>2年',
+  //   ).then(({ list }) => setCadidates(list.sort(() => Math.random() - 0.5)));
+  // }, []);
 
   const onSecSelect = useMemoizedFn((id: string) => {
     history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', id));
@@ -369,12 +374,7 @@ export const NavRight = memo((props: NavRightProps) => {
 
       <Tooltip>
         <TooltipTrigger className="rounded-md">
-          <div
-            onClick={onRandom}
-            className={clsx('p-2 hover:bg-muted rounded-md', {
-              'opacity-75 pointer-events-none': !candidates,
-            })}
-          >
+          <div onClick={onRandom} className={clsx('p-2 hover:bg-muted rounded-md')}>
             <Clover size={17} />
           </div>
         </TooltipTrigger>

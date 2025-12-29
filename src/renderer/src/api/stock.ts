@@ -104,6 +104,7 @@ export const fetchFilterList = async (
       kdj_day: Number(item[kdjDayKey]),
       kdj_week: Number(item[kdjWeekKey]),
       kdj_half_hour: Number(item[kdjHalfHourKey]),
+      ...item,
     };
   });
 
