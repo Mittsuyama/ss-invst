@@ -16,6 +16,7 @@ export enum PeriodType {
   MINUTE = 'minute',
   FIVE_MINUTE = 'five_minute',
   FIFTEEN_MINUTE = 'fifteen_minute',
+  TEN_MINUTE = 'ten_minute',
   HALF_HOUR = 'half_hour',
   HOUR = 'hour',
   DAY = 'day',
@@ -34,8 +35,9 @@ export enum ChartType {
   MONTH = 'month',
   WEEK_AND_DAY = 'week_and_day',
   DAY_AND_HOUR = 'day_and_hour',
-  DAY_AND_FIVE_MINUTE = 'day_and_five_minute',
   DAY_AND_HALF_HOUR = 'day_and_half_hour',
+  DAY_AND_TEN_MINUTE = 'day_and_ten_minute',
+  DAY_AND_FIVE_MINUTE = 'day_and_five_minute',
 }
 
 export interface PriceAndVolumeItem extends KLineData {
