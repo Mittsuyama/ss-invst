@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, memo, useEffect, useState } from 'react';
+import { CSSProperties, Fragment, memo, useEffect, useState, useRef } from 'react';
 import { clsx } from 'clsx';
 import { useHistory } from 'react-router-dom';
 import { useAtom } from 'jotai';
@@ -85,6 +85,7 @@ export const NavRight = memo((props: NavRightProps) => {
   const [list, setList] = useState<Array<O>>([...historyOptions, ...ROUTER_LIST]);
   const [candidates, setCadidates] = useState<FilterItem[] | null>(null);
   const [index, setIndex] = useState(0);
+  const mouseHasMoved = useRef(false);
 
   const onRandom = useMemoizedFn(async () => {
     let list = candidates;
@@ -140,6 +141,8 @@ export const NavRight = memo((props: NavRightProps) => {
         return;
       }
       try {
+        // 每次搜索需要清空鼠标移动状态，保证意外的 hover 不会触发选择
+        mouseHasMoved.current = false;
         const res = await request(
           RequestType.GET,
           'https://search-codetable.eastmoney.com/codetable/search/web',
@@ -230,10 +233,14 @@ export const NavRight = memo((props: NavRightProps) => {
   });
 
   useEffect(() => {
+    const onMouseMove = () => (mouseHasMoved.current = true);
+
     document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousemove', onMouseMove);
 
     return () => {
       document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousemove', onMouseMove);
     };
   }, [onRandom, onKeyDown]);
 
@@ -278,7 +285,7 @@ export const NavRight = memo((props: NavRightProps) => {
             id={`path-${path}`}
             className={cn}
             style={style}
-            onMouseEnter={() => setIndex(i)}
+            onMouseEnter={() => mouseHasMoved.current && setIndex(i)}
           >
             <Icon size={16} />
             <div className="text-md">{title}</div>
@@ -301,7 +308,7 @@ export const NavRight = memo((props: NavRightProps) => {
           onClick={() => onSecSelect(id)}
           className={cn}
           style={style}
-          onMouseEnter={() => setIndex(i)}
+          onMouseEnter={() => mouseHasMoved.current && setIndex(i)}
           id={`stock-${id}`}
         >
           <div className="px-1 py-[2px] text-xs text-muted-foreground border rounded-md bg-background">
