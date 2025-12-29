@@ -26,6 +26,7 @@ export const chartType2PeriodTypes: Record<ChartType, PeriodType[]> = {
   [ChartType.WEEK_AND_DAY]: [PeriodType.WEEK, PeriodType.DAY],
   [ChartType.DAY_AND_HOUR]: [PeriodType.DAY, PeriodType.HOUR],
   [ChartType.DAY_AND_HALF_HOUR]: [PeriodType.DAY, PeriodType.HALF_HOUR],
+  [ChartType.DAY_AND_FIFTEEN_MINUTE]: [PeriodType.DAY, PeriodType.FIFTEEN_MINUTE],
   [ChartType.DAY_AND_TEN_MINUTE]: [PeriodType.DAY, PeriodType.TEN_MINUTE],
   [ChartType.DAY_AND_FIVE_MINUTE]: [PeriodType.DAY, PeriodType.FIVE_MINUTE],
 };
@@ -42,6 +43,7 @@ export const chartTypeTittle: Record<ChartType, string> = {
   [ChartType.WEEK_AND_DAY]: '周/日',
   [ChartType.DAY_AND_HOUR]: '日/60分钟',
   [ChartType.DAY_AND_HALF_HOUR]: '日/30分钟',
+  [ChartType.DAY_AND_FIFTEEN_MINUTE]: '日/15分钟',
   [ChartType.DAY_AND_TEN_MINUTE]: '日/10分钟',
   [ChartType.DAY_AND_FIVE_MINUTE]: '日/5分钟',
 };
