@@ -36,6 +36,7 @@ export interface FilterItem {
   kdj_day: number;
   kdj_week: number;
   kdj_half_hour: number;
+  kdj_fifteen_minute: number;
 }
 
 export interface FilterColumn {

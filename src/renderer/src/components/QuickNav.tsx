@@ -248,9 +248,9 @@ export const QuickNav = memo(() => {
       return b.totalMarketValue - a.totalMarketValue;
     }
     if (d === 'asc') {
-      return a.kdj_week - b.kdj_week;
+      return a.kdj_fifteen_minute - b.kdj_fifteen_minute;
     }
-    return b.kdj_week - a.kdj_week;
+    return b.kdj_fifteen_minute - a.kdj_fifteen_minute;
   });
 
   const fetchFilterList = useMemoizedFn(async (ids: string[], d = direction) => {
@@ -264,7 +264,7 @@ export const QuickNav = memo(() => {
           pageNo: 1,
           fingerprint: 'f95cc8cd33dbefa5237c65ac21b3c1b3',
           biz: 'web_ai_select_stocks',
-          keyWordNew: `${ids.map((item) => item.split('.')[1]).join(';')};周线周期KDJ(J值);日线周期KDJ(J值);30分钟线周期KDJ(J值)`,
+          keyWordNew: `${ids.map((item) => item.split('.')[1]).join(';')};周线周期KDJ(J值);日线周期KDJ(J值);30分钟线周期KDJ(J值);15分钟线周期KDJ(J值)`,
         },
       );
       setOptions(
@@ -276,6 +276,7 @@ export const QuickNav = memo(() => {
             const kdjDayKey = keys.find((key) => key.includes('KDJ_J') && !key.includes('<')) || '';
             const kdjWeekKey = keys.find((key) => key.includes('KDJ_J<80>')) || '';
             const kdjHalfHourKey = keys.find((key) => key.includes('KDJ_J<40>')) || '';
+            const kdjFifteenMinuteKey = keys.find((key) => key.includes('KDJ_J<30>')) || '';
             const code = item['SECURITY_CODE'];
             return {
               id: ids.find((id) => id.includes(code)) || '',
@@ -287,6 +288,7 @@ export const QuickNav = memo(() => {
               kdj_day: Number(item[kdjDayKey]),
               kdj_week: Number(item[kdjWeekKey]),
               kdj_half_hour: Number(item[kdjHalfHourKey]),
+              kdj_fifteen_minute: Number(item[kdjFifteenMinuteKey]),
             };
           })
           .sort((a, b) => sort(a, b, d)),
