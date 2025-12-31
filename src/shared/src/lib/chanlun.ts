@@ -111,7 +111,14 @@ export const computeStrokeSimply = (origin: PriceAndVolumeItem[]) => {
     if (!items[i].fractal || !items[j].fractal) {
       return false;
     }
-    if (Math.abs(i - j) < 4) {
+    let count = 0;
+    for (let k = Math.min(i, j); k <= Math.max(i, j); k++) {
+      // 过滤被包含 K 线
+      if (!items[k].enclosed) {
+        count++;
+      }
+    }
+    if (count < 4) {
       return false;
     }
     if (
@@ -386,12 +393,12 @@ export const computePivotWithDp = (strokes: Stroke[]) => {
       }
 
       // 如果开始笔不是从中枢反向突破而来，不能形成中枢
-      if (
-        (strokes[i].type === 'up' && strokes[j].start.price > p.low) ||
-        (strokes[i].type === 'down' && strokes[j].start.price < p.high)
-      ) {
-        continue;
-      }
+      // if (
+      //   (strokes[i].type === 'up' && strokes[j].start.price > p.low) ||
+      //   (strokes[i].type === 'down' && strokes[j].start.price < p.high)
+      // ) {
+      //   continue;
+      // }
 
       // 不能算前后两笔
       const strokeCount = i - j - 1;

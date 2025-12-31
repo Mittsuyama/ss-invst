@@ -229,7 +229,10 @@ const SimpleItem = memo((props: SimpleItemProps) => {
 SimpleItem.displayName = 'SimpleItem';
 
 export const QuickNav = memo(() => {
-  const [type, setType] = useState('watch');
+  const history = useHistory();
+  const { id: idFromParams } = useParams<{ id: string }>();
+
+  const [type, setType] = useState('choice');
   const favStockIdList = useAtomValue(favStockIdListAtom);
   const watchIdList = useAtomValue(watchStockIdListAtom);
   const [direction, setDirection] = useAtom(quickNavDirectionAtom);
@@ -298,6 +301,32 @@ export const QuickNav = memo(() => {
     }
   });
 
+  const onKeyDown = useMemoizedFn((e: KeyboardEvent) => {
+    const index = options.findIndex((item) => item.id === idFromParams);
+    if (e.key === 'ArrowUp') {
+      if (index > 0) {
+        history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', options[index - 1].id));
+        document.querySelector(`[data-nav-stock-id="${options[index - 1].id}"]`)?.scrollIntoView();
+      }
+      e.preventDefault();
+      e.stopPropagation();
+    } else if (e.key === 'ArrowDown') {
+      if (index < options.length - 1) {
+        history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', options[index + 1].id));
+        document.querySelector(`[data-nav-stock-id="${options[index + 1].id}"]`)?.scrollIntoView();
+      }
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+
+  useEffect(() => {
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onKeyDown]);
+
   useEffect(() => {
     fetchFilterList(idList);
   }, [idList, fetchFilterList]);
@@ -310,8 +339,8 @@ export const QuickNav = memo(() => {
             <SelectValue placeholder="类型" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="watch">关注</SelectItem>
-            <SelectItem value="choice">自选</SelectItem>
+            <SelectItem value="watch">备选</SelectItem>
+            <SelectItem value="choice">持有</SelectItem>
           </SelectContent>
         </Select>
         <div className="space ml-auto">
@@ -344,7 +373,7 @@ export const QuickNav = memo(() => {
       </div>
       <div className="flex-1 overflow-auto px-3 no-scrollbar">
         {options.map((detail) => (
-          <SimpleItem key={detail.id} detail={detail} />
+          <SimpleItem data-nav-stock-id={detail.id} key={detail.id} detail={detail} />
         ))}
       </div>
     </div>

@@ -2,7 +2,16 @@ import { memo, ReactNode, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
-import { Eye, EyeOff, HeartOff, Heart, Webhook, WebhookOff } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  HeartOff,
+  Heart,
+  Webhook,
+  WebhookOff,
+  Aperture,
+  SquareSigma,
+} from 'lucide-react';
 import { ChartType, PriceAndVolumeItem, StockInfo } from '@shared/types/stock';
 import { chartType2PeriodTypes, chartTypeTittle } from '@/lib/constants';
 import {
@@ -117,7 +126,7 @@ export const Detail = memo((props: DetailProps) => {
               {[
                 ChartType.WEEK_AND_DAY,
                 ChartType.DAY_AND_FIFTEEN_MINUTE,
-                ChartType.DAY_AND_FIVE_MINUTE,
+                // ChartType.DAY_AND_FIVE_MINUTE,
                 ChartType.FIVE_MINUTE,
                 ChartType.DAY,
                 ChartType.WEEK,
@@ -134,39 +143,37 @@ export const Detail = memo((props: DetailProps) => {
               {/* <RotateCcw /> */}
               刷新
             </Button>
-            <Button
-              className={clsx({
-                'font-bold bg-secondary': overlayVisible,
-              })}
-              variant="outline"
-              onClick={() => setOverlayVisible((pre) => !pre)}
-            >
-              {overlayVisible ? <Webhook strokeWidth={3} /> : <WebhookOff />}缠论
+            <Button variant="outline" onClick={() => setOverlayVisible((pre) => !pre)}>
+              {overlayVisible ? (
+                <SquareSigma className="*:[rect]:stroke-red-500 *:[path]:stroke-white fill-red-500" />
+              ) : (
+                <SquareSigma />
+              )}
+              缠论
             </Button>
             {watchIdList.includes(id) ? (
               <Button
-                className="font-bold bg-secondary"
                 variant="outline"
                 onClick={() => setWatchIdList(watchIdList.filter((item) => item !== id))}
               >
-                <Eye strokeWidth={3} /> 关注
+                <Aperture className="*:[path]:stroke-white *:[circle]:stroke-red-500 fill-red-500" />
+                备选
               </Button>
             ) : (
               <Button variant="outline" onClick={() => setWatchIdList([...watchIdList, id])}>
-                <EyeOff /> 关注
+                <Aperture /> 备选
               </Button>
             )}
             {favIdList.includes(id) ? (
               <Button
-                className="font-bold bg-secondary"
                 variant="outline"
                 onClick={() => setFavIdList(favIdList.filter((item) => item !== id))}
               >
-                <Heart strokeWidth={3} /> 自选
+                <Heart className="fill-red-500 stroke-red-500" /> 自选
               </Button>
             ) : (
               <Button variant="outline" onClick={() => setFavIdList([...favIdList, id])}>
-                <HeartOff />
+                <Heart />
                 自选
               </Button>
             )}

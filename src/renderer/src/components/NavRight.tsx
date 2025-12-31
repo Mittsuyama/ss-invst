@@ -90,9 +90,7 @@ export const NavRight = memo((props: NavRightProps) => {
   const onRandom = useMemoizedFn(async () => {
     let list = candidates;
     if (!list?.length) {
-      const res = await fetchFilterList(
-        '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;上市时间>2年',
-      );
+      const res = await fetchFilterList('上市时间>2年;日线周期KDJ(J值)<10');
       res.list.sort(() => Math.random() - 0.5);
       list = res.list;
     }
