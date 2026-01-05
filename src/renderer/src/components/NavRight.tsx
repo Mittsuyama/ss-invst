@@ -29,7 +29,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Dialog, DialogTitle, DialogContent } from '@/components/ui/dialog';
 import { RequestType } from '@shared/types/request';
 import { request } from '@/lib/request';
-import { historySearchOptionsAtom } from '@renderer/models/search';
+import { historySearchOptionsAtom, searchOpenAtom } from '@renderer/models/search';
 import { fetchFilterList } from '@renderer/api/stock';
 
 const ROUTER_LIST: RouterOption[] = [
@@ -81,7 +81,7 @@ export const NavRight = memo((props: NavRightProps) => {
   const history = useHistory();
   const { themeSetting, onThemeSettingChange } = useTheme();
   const [historyOptions, setHistoryOptions] = useAtom(historySearchOptionsAtom);
-  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchOpen, setSearchOpen] = useAtom(searchOpenAtom);
   const [list, setList] = useState<Array<O>>([...historyOptions, ...ROUTER_LIST]);
   const [candidates, setCadidates] = useState<FilterItem[] | null>(null);
   const [index, setIndex] = useState(0);
@@ -123,7 +123,7 @@ export const NavRight = memo((props: NavRightProps) => {
       };
     }
     setIndex(0);
-    setSearchVisible(false);
+    setSearchOpen(false);
     if (nh) {
       const newList = historyOptions.filter((item) => item.id !== id);
       setHistoryOptions([nh, ...newList]);
@@ -192,7 +192,7 @@ export const NavRight = memo((props: NavRightProps) => {
       if (item.type === 'sec' || item.type === 'history') {
         onSecSelect(item.id);
       }
-      setSearchVisible(false);
+      setSearchOpen(false);
       return;
     }
 
@@ -216,11 +216,13 @@ export const NavRight = memo((props: NavRightProps) => {
           });
         }
       }
+      e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
     if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-      setSearchVisible(true);
+      setSearchOpen(true);
       return;
     }
 
@@ -323,7 +325,7 @@ export const NavRight = memo((props: NavRightProps) => {
 
   return (
     <div className={clsx('flex gap-2 items-center', className)}>
-      <Dialog open={searchVisible} onOpenChange={setSearchVisible}>
+      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
         <DialogTitle />
         <DialogContent
           className="p-[6px] rounded-2xl border-5 border-muted flex flex-col gap-0 h-120 overflow-hidden"
@@ -357,7 +359,7 @@ export const NavRight = memo((props: NavRightProps) => {
 
       <div
         className="flex px-2 py-1 mr-2 text-sm text-muted-foreground gap-8 items-center rounded-md bg-muted border-2 border-transparent hover:border-muted-foreground/30 cursor-pointer"
-        onClick={() => setSearchVisible(true)}
+        onClick={() => setSearchOpen(true)}
       >
         <div>搜索股票/指数/期权</div>
         <div className="flex gap-1 items-center text-xs">

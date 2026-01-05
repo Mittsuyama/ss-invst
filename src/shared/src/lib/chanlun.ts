@@ -393,12 +393,12 @@ export const computePivotWithDp = (strokes: Stroke[]) => {
       }
 
       // 如果开始笔不是从中枢反向突破而来，不能形成中枢
-      // if (
-      //   (strokes[i].type === 'up' && strokes[j].start.price > p.low) ||
-      //   (strokes[i].type === 'down' && strokes[j].start.price < p.high)
-      // ) {
-      //   continue;
-      // }
+      if (
+        (strokes[i].type === 'up' && strokes[j].start.price > p.low) ||
+        (strokes[i].type === 'down' && strokes[j].start.price < p.high)
+      ) {
+        continue;
+      }
 
       // 不能算前后两笔
       const strokeCount = i - j - 1;

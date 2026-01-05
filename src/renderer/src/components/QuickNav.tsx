@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Direction } from '@shared/types/meta';
+import { searchOpenAtom } from '@renderer/models/search';
 
 interface NavItemProps {
   detail: HistoryOption;
@@ -235,6 +236,7 @@ export const QuickNav = memo(() => {
   const [type, setType] = useState('choice');
   const favStockIdList = useAtomValue(favStockIdListAtom);
   const watchIdList = useAtomValue(watchStockIdListAtom);
+  const searchOpen = useAtomValue(searchOpenAtom);
   const [direction, setDirection] = useAtom(quickNavDirectionAtom);
   const [options, setOptions] = useState<FilterItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -321,11 +323,14 @@ export const QuickNav = memo(() => {
   });
 
   useEffect(() => {
+    if (searchOpen) {
+      return;
+    }
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [onKeyDown]);
+  }, [onKeyDown, searchOpen]);
 
   useEffect(() => {
     fetchFilterList(idList);

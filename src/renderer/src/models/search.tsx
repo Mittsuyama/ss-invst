@@ -1,5 +1,6 @@
-import { HistoryOption } from '@/types/search';
+import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
+import { HistoryOption } from '@/types/search';
 
 export const historySearchOptionsAtom = atomWithStorage(
   'history-search-options',
@@ -7,3 +8,5 @@ export const historySearchOptionsAtom = atomWithStorage(
   undefined,
   { getOnInit: true },
 );
+
+export const searchOpenAtom = atom(false);
