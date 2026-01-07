@@ -28,11 +28,27 @@ export const watchStockIdListAtom = atomWithStorage<Array<string>>(
     getOnInit: true,
   },
 );
+export const realtimeStockIdListAtom = atomWithStorage<Array<string>>(
+  'realtime-stock-id-list',
+  [],
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
 export const chanlunVisibleAtom = atomWithStorage<boolean>('chanlun-visible', true, undefined, {
   getOnInit: true,
 });
 export const quickNavDirectionAtom = atomWithStorage<Direction | null>(
   'quick-nav-direction',
+  null,
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
+export const realtimeDirectionAtom = atomWithStorage<Direction | null>(
+  'realtime-direction',
   null,
   undefined,
   {

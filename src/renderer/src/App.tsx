@@ -6,6 +6,7 @@ import { Home } from '@/pages/Home';
 import { Choice } from '@/pages/Choice';
 import { Filter } from '@/pages/Filter';
 import { Option } from '@/pages/Option';
+import { Realtime } from '@/pages/Realtime';
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -28,6 +29,11 @@ const ROUTES: Array<{
     key: RouterKey.HOME,
     title: '首页',
     FC: Home,
+  },
+  {
+    title: '实时',
+    FC: Realtime,
+    key: RouterKey.REALTIME,
   },
   {
     key: RouterKey.CHOICE,

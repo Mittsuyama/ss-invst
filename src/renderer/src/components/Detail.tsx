@@ -2,16 +2,7 @@ import { memo, ReactNode, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
-import {
-  Eye,
-  EyeOff,
-  HeartOff,
-  Heart,
-  Webhook,
-  WebhookOff,
-  Aperture,
-  SquareSigma,
-} from 'lucide-react';
+import { Heart, Aperture, SquareSigma } from 'lucide-react';
 import { ChartType, PriceAndVolumeItem, StockInfo } from '@shared/types/stock';
 import { chartType2PeriodTypes, chartTypeTittle } from '@/lib/constants';
 import {
@@ -127,7 +118,7 @@ export const Detail = memo((props: DetailProps) => {
                 ChartType.WEEK_AND_DAY,
                 ChartType.DAY_AND_FIFTEEN_MINUTE,
                 // ChartType.DAY_AND_FIVE_MINUTE,
-                ChartType.FIVE_MINUTE,
+                ChartType.FIFTEEN_MINUTE,
                 ChartType.DAY,
                 ChartType.WEEK,
                 ChartType.MONTH,

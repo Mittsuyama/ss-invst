@@ -93,6 +93,7 @@ export const fetchFilterList = async (
     const kdjDayKey = keys.find((key) => key.includes('KDJ_J') && !key.includes('<')) || '';
     const kdjWeekKey = keys.find((key) => key.includes('KDJ_J<80>')) || '';
     const kdjHalfHourKey = keys.find((key) => key.includes('KDJ_J<40>')) || '';
+    const kdjFifteenMinuteKey = keys.find((key) => key.includes('KDJ_J<30>')) || '';
     const code = item['SECURITY_CODE'];
     return {
       id: `${item['MARKET_NUM']}.${code}`,
@@ -104,6 +105,7 @@ export const fetchFilterList = async (
       kdj_day: Number(item[kdjDayKey]),
       kdj_week: Number(item[kdjWeekKey]),
       kdj_half_hour: Number(item[kdjHalfHourKey]),
+      kdj_fifteen_minute: Number(item[kdjFifteenMinuteKey]),
       ...item,
     };
   });

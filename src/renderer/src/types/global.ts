@@ -13,6 +13,9 @@ export enum RouterKey {
   /** 期权 */
   OPTION = '/option',
 
+  /** 实时 */
+  REALTIME = '/realtime',
+
   /** 设置 */
   SETTINGS = '/settings',
 

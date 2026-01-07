@@ -252,10 +252,11 @@ export const QuickNav = memo(() => {
     if (!d) {
       return b.totalMarketValue - a.totalMarketValue;
     }
+    const key: keyof FilterItem = 'kdj_fifteen_minute';
     if (d === 'asc') {
-      return a.kdj_fifteen_minute - b.kdj_fifteen_minute;
+      return a[key] - b[key];
     }
-    return b.kdj_fifteen_minute - a.kdj_fifteen_minute;
+    return b[key] - a[key];
   });
 
   const fetchFilterList = useMemoizedFn(async (ids: string[], d = direction) => {

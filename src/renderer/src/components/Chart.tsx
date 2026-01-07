@@ -23,6 +23,7 @@ import { fetchKLines } from '@/api/klines';
 import { computePivotWithDp, computeStrokeSimply } from '@shared/lib/chanlun';
 import { scaleInPeriodAtom } from '@renderer/models/detail';
 import { Button } from '@/components/ui/button';
+import clsx from 'clsx';
 // import { chanlunComputeRequest } from '@renderer/lib/request';
 
 const STROKE_COLOR = '#888888DD';
@@ -85,6 +86,20 @@ registerOverlay({
   },
 });
 
+interface ChartProps {
+  id: string;
+  period: PeriodType;
+  setCurrent?: (item: PriceAndVolumeItem | null) => void;
+  overlayVisible?: boolean;
+  className?: string;
+  /** 是否显示成交量 */
+  hideVol?: boolean;
+  /** 指标高度 */
+  indicatorHeight?: number;
+  /** 隐藏重置缩放按钮 */
+  hideResetScale?: boolean;
+}
+
 const DEFAULT_SCALE = 0.2;
 
 const CHART_ID_PREFIX = 'detail-klines';
@@ -93,13 +108,12 @@ export const Chart = memo(
     id,
     period,
     setCurrent,
-    overlayVisible,
-  }: {
-    id: string;
-    period: PeriodType;
-    setCurrent: (item: PriceAndVolumeItem | null) => void;
-    overlayVisible: boolean;
-  }) => {
+    overlayVisible = true,
+    className,
+    hideVol,
+    indicatorHeight = 80,
+    hideResetScale,
+  }: ChartProps) => {
     const theme = useAtomValue(themeAtom);
     const [scaleInPeriod, setScaleInPeriod] = useAtom(scaleInPeriodAtom);
     const [list, setList] = useState<PriceAndVolumeItem[] | null>(null);
@@ -185,7 +199,7 @@ export const Chart = memo(
       if (!list) {
         return;
       }
-      const chart = init(`${CHART_ID_PREFIX}-${period}`);
+      const chart = init(`${CHART_ID_PREFIX}-${id}-${period}`);
       if (chart) {
         chart.applyNewData(list);
         chart.setOffsetRightDistance(8);
@@ -200,6 +214,9 @@ export const Chart = memo(
                 upColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
               },
             ],
+            tooltip: {
+              // showRule: TooltipShowRule.None,
+            },
           },
           separator: {
             color: theme === 'dark' ? '#333' : '#ddd',
@@ -232,6 +249,14 @@ export const Chart = memo(
                 noChangeColor: PRICE_COLOR,
               },
             },
+            tooltip: {
+              custom: [
+                { title: 'open', value: '{open}' },
+                { title: 'high', value: '{high}' },
+                { title: 'low', value: '{low}' },
+                { title: 'close', value: '{close}' },
+              ],
+            },
           },
         });
         chart.createIndicator(
@@ -248,26 +273,30 @@ export const Chart = memo(
             },
           },
           true,
-          { id: 'candle_pane' },
+          { id: 'candle_pane', height: indicatorHeight },
         );
         // chart.createIndicator('BBI', true, { id: 'candle_pane' });
-        chart.createIndicator('VOL');
-        chart.createIndicator({
-          name: 'KDJ',
-          styles: {
-            lines: KDJ_COLORS.map((color) => ({
-              color,
-              size: 1,
-            })),
+        !hideVol && chart.createIndicator('VOL');
+        chart.createIndicator(
+          {
+            name: 'KDJ',
+            styles: {
+              lines: KDJ_COLORS.map((color) => ({
+                color,
+                size: 1,
+              })),
+            },
           },
-        });
+          false,
+          { height: indicatorHeight },
+        );
         // chart.createIndicator('KDJ');
-        chart.createIndicator('MACD');
+        chart.createIndicator('MACD', false, { height: indicatorHeight });
         chart.zoomAtTimestamp(unchangableScale || DEFAULT_SCALE, list[list.length - 1].timestamp);
         chart.subscribeAction(ActionType.OnCrosshairChange, (e) => {
           if (typeof e === 'object' && e && 'kLineData' in e) {
             const data = e.kLineData as PriceAndVolumeItem;
-            setCurrent(data);
+            setCurrent?.(data);
           }
         });
         chart.subscribeAction(ActionType.OnZoom, (data) => {
@@ -282,7 +311,7 @@ export const Chart = memo(
         setChart(chart);
       }
       return () => {
-        dispose(`${CHART_ID_PREFIX}-${period}`);
+        dispose(`${CHART_ID_PREFIX}-${id}-${period}`);
       };
     }, [
       list,
@@ -292,29 +321,33 @@ export const Chart = memo(
       setScaleInPeriod,
       unchangableScale,
       setCurrent,
+      hideVol,
+      indicatorHeight,
+      id,
     ]);
 
     return (
-      <div className="relative border rounded-xl w-full h-full overflow-hidden">
-        <div className="absolute top-1 right-1 text-xs text-muted-foreground flex gap-2 z-20">
-          {/* {periodTitle[period]} */}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setScaleInPeriod((pre) => ({
-                ...pre,
-                [period]: DEFAULT_SCALE,
-              }));
-              list && chart?.zoomAtTimestamp(DEFAULT_SCALE, list[list.length - 1].timestamp);
-            }}
-          >
-            重置缩放
-          </Button>
-        </div>
+      <div className={clsx('relative border rounded-xl w-full h-full overflow-hidden', className)}>
+        {!hideResetScale && (
+          <div className="absolute top-1 right-1 text-xs text-muted-foreground flex gap-2 z-20">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setScaleInPeriod((pre) => ({
+                  ...pre,
+                  [period]: DEFAULT_SCALE,
+                }));
+                list && chart?.zoomAtTimestamp(DEFAULT_SCALE, list[list.length - 1].timestamp);
+              }}
+            >
+              重置缩放
+            </Button>
+          </div>
+        )}
         <div
-          onMouseOut={() => setCurrent(null)}
-          id={`${CHART_ID_PREFIX}-${period}`}
+          onMouseOut={() => setCurrent?.(null)}
+          id={`${CHART_ID_PREFIX}-${id}-${period}`}
           className="w-full h-full overflow-hidden relative z-10"
         />
       </div>
