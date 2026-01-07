@@ -44,7 +44,7 @@ const COLUMN_ORDER = [
 ];
 
 const CONDITION =
-  '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;上市时间>2年';
+  '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;上市时间>2年;总市值>50亿';
 
 export const Filter = memo(() => {
   const [loading, setLoading] = useState(false);

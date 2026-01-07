@@ -31,9 +31,9 @@ export const NavRight = memo((props: NavRightProps) => {
   const [candidates, setCadidates] = useState<FilterItem[] | null>(null);
 
   const onRandom = useMemoizedFn(async () => {
-    let list = candidates;
+    let list = candidates?.slice();
     if (!list?.length) {
-      const res = await fetchFilterList('上市时间>2年;日线周期KDJ(J值)<10');
+      const res = await fetchFilterList('上市时间>2年;日线周期KDJ(J值)<10;总市值>50亿');
       res.list.sort(() => Math.random() - 0.5);
       list = res.list;
     }
@@ -110,7 +110,7 @@ export const NavRight = memo((props: NavRightProps) => {
             <Clover size={17} />
           </div>
         </TooltipTrigger>
-        <TooltipContent>手气不错</TooltipContent>
+        <TooltipContent>手气不错 ({candidates?.length ?? '-'})</TooltipContent>
       </Tooltip>
     </div>
   );

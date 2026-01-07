@@ -175,20 +175,22 @@ const SimpleItem = memo((props: SimpleItemProps) => {
   const { id: idFromParams } = useParams<{ id: string }>();
 
   const kdjRender = (value?: number, label?: string) => {
+    const max = 80;
+    const min = 20;
     if (typeof value !== 'number') {
       return <div className="text-foreground">-</div>;
     }
     return (
       <div
         className="flex-1 text-muted-foreground flex items-center"
-        style={value >= 90 ? { color: RED_COLOR } : value < 10 ? { color: GREEN_COLOR } : {}}
+        style={value >= max ? { color: RED_COLOR } : value < min ? { color: GREEN_COLOR } : {}}
       >
         {value.toFixed(1)}
         <div
           className="ml-2 flex items-center"
-          style={{ visibility: value >= 10 && value < 90 ? 'hidden' : 'visible' }}
+          style={{ visibility: value >= min && value < max ? 'hidden' : 'visible' }}
         >
-          <div className="pb-0.5">{value >= 90 ? '▲' : value < 10 ? '▼' : '▼'}</div>
+          <div className="pb-0.5">{value >= max ? '▲' : value < min ? '▼' : '▼'}</div>
           <div className="ml-1">{label}</div>
         </div>
       </div>

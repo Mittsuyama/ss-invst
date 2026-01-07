@@ -74,7 +74,7 @@ export const fetchFilterList = async (
   rule: string,
   options?: { pageSize: number; page: number },
 ) => {
-  const { page = 1, pageSize = 100 } = options || {};
+  const { page = 1, pageSize = 500 } = options || {};
   const res = await request(
     RequestType.POST,
     'https://np-tjxg-g.eastmoney.com/api/smart-tag/stock/v3/pw/search-code',
