@@ -65,10 +65,7 @@ function App() {
     <>
       <div className="w-full h-full overflow-hidden flex flex-col bg-semi-color-bg-0 bg-background text-foreground">
         <div className="flex-none w-full py-4 px-6 space">
-          {/* <div className="bg-foreground text-background flex rounded-lg p-2 mr-2">
-            <PiggyBank size={18} />
-          </div> */}
-          <PiggyBank className="text-foreground mr-2" strokeWidth={2} size={24} />
+          <PiggyBank className="text-foreground mr-2" size={26} />
           <NavigationMenu>
             <NavigationMenuList>
               {ROUTES.filter((item) => !item.hide).map((item) => (

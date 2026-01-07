@@ -280,22 +280,6 @@ export const Filter = memo(() => {
           className="flex flex-col"
           style={{ width: 'calc(100% - 260px)', maxWidth: '100%' }}
         >
-          {/* <div className="flex-none flex items-center p-6"> */}
-          {/*   <DrawerHeader className="flex p-0"> */}
-          {/*     <DrawerTitle className="mb-0">查看详情</DrawerTitle> */}
-          {/*   </DrawerHeader> */}
-          {/*   <div className="flex gap-5 items-center ml-auto"> */}
-          {/*     <Button variant="outline" onClick={onPrevious}> */}
-          {/*       <ChevronLeft className="" /> */}
-          {/*       上一个 */}
-          {/*     </Button> */}
-          {/*     <div>{current?.SECURITY_SHORT_NAME}</div> */}
-          {/*     <Button variant="outline" onClick={onNext}> */}
-          {/*       下一个 */}
-          {/*       <ChevronRight className="" /> */}
-          {/*     </Button> */}
-          {/*   </div> */}
-          {/* </div> */}
           <div
             className={clsx('flex-1 overflow-hidden px-6 pt-5', { 'opacity-25': currentIdLoading })}
           >

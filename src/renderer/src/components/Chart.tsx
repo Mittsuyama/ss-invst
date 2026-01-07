@@ -43,21 +43,30 @@ interface PivotAttrs {
 
 interface PivotStyles {
   color: string;
+  extended?: boolean;
 }
 
 registerFigure<PivotAttrs, PivotStyles>({
   name: 'pivot',
   draw: (ctx, attrs, styles) => {
     const { x1, y1, x2, y2 } = attrs;
-    const { color } = styles;
+    const { color, extended } = styles;
     ctx.beginPath();
     ctx.strokeStyle = `${color}ee`;
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
     ctx.fillStyle = `${color}33`;
+    if (extended) {
+      ctx.setLineDash([10, 10]);
+      ctx.strokeStyle = `${color}aa`;
+      ctx.fillStyle = `${color}11`;
+    }
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
     ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
   },
-  checkEventOn: ({ x, y }, attrs) => {
+  checkEventOn: ({ x, y }, attrs, styles) => {
+    if (styles.extended) {
+      return false;
+    }
     const { x1, y1, x2, y2 } = attrs;
     const xRange = [x1, x2].sort((a, b) => a - b);
     const yRange = [y1, y2].sort((a, b) => a - b);

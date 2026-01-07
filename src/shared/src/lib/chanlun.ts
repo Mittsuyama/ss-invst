@@ -1,5 +1,6 @@
 import {
   ChanlunK,
+  ExtendedPivot,
   Pivot,
   PivotDpData,
   PriceAndVolumeItem,
@@ -375,12 +376,16 @@ export const computePivotWithDp = (strokes: Stroke[]) => {
       low: strokes[i].type === 'down' ? strokes[i].end.price : Number.MIN_SAFE_INTEGER,
       // 上升中枢最大值不能小于结束笔的最高价（即中枢突破）
       high: strokes[i].type === 'up' ? strokes[i].end.price : Number.MAX_SAFE_INTEGER,
+      min: Number.MAX_SAFE_INTEGER,
+      max: Number.MIN_SAFE_INTEGER,
     };
 
     // 枚举可行的作为中枢的笔
     for (let j = i - 1; j >= 0; j--) {
       p.low = strokes[j].type === 'down' ? Math.max(p.low, strokes[j].end.price) : p.low;
       p.high = strokes[j].type === 'up' ? Math.min(p.high, strokes[j].end.price) : p.high;
+      p.min = Math.min(p.min, strokes[j].start.price);
+      p.max = Math.max(p.max, strokes[j].start.price);
 
       // 已经不重叠了
       if (p.low >= p.high) {
@@ -440,7 +445,63 @@ export const computePivotWithDp = (strokes: Stroke[]) => {
       end: strokes[dp[i].end].start.timestamp,
       low: dp[i].low,
       high: dp[i].high,
+      min: dp[i].min,
+      max: dp[i].max,
     });
+  }
+  return res;
+};
+
+const checkPivotHasCollapse = <T extends { min: number; max: number }>(a: T, b: T) => {
+  if (a.min < b.min) {
+    return b.min < a.max;
+  }
+  return b.max > a.min;
+};
+
+export const computeExtendedPivot = (pivots: Pivot[]) => {
+  const res: ExtendedPivot[] = [];
+  let i = 0;
+  let j = 1;
+  let newExtendedPivot: ExtendedPivot | undefined = undefined;
+  while (j < pivots.length) {
+    if (!newExtendedPivot) {
+      if (pivots[i].type === pivots[j].type && checkPivotHasCollapse(pivots[i], pivots[j])) {
+        newExtendedPivot = {
+          type: pivots[i].type,
+          min: Math.min(pivots[i].min, pivots[j].min),
+          max: Math.max(pivots[i].max, pivots[j].max),
+          start: pivots[i].start,
+          end: pivots[j].end,
+        };
+        j++;
+        continue;
+      }
+      i++;
+      j++;
+      continue;
+    }
+    if (
+      newExtendedPivot.type === pivots[j].type &&
+      checkPivotHasCollapse(newExtendedPivot, pivots[j])
+    ) {
+      newExtendedPivot = {
+        type: newExtendedPivot.type,
+        min: Math.min(newExtendedPivot.min, pivots[j].min),
+        max: Math.max(newExtendedPivot.max, pivots[j].max),
+        start: newExtendedPivot.start,
+        end: pivots[j].end,
+      };
+      j++;
+      continue;
+    }
+    res.push(newExtendedPivot);
+    newExtendedPivot = undefined;
+    i = j + 1;
+    j = i + 1;
+  }
+  if (newExtendedPivot) {
+    res.push(newExtendedPivot);
   }
   return res;
 };

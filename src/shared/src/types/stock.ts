@@ -82,6 +82,16 @@ export interface Pivot {
   end: number;
   low: number;
   high: number;
+  min: number;
+  max: number;
+}
+
+export interface ExtendedPivot {
+  type: 'up' | 'down';
+  start: number;
+  end: number;
+  min: number;
+  max: number;
 }
 
 export interface PivotDpData {
@@ -99,6 +109,10 @@ export interface PivotDpData {
   low: number;
   /** 中枢的最大价格 */
   high: number;
+  /** 最小值 */
+  min: number;
+  /** 最大值 */
+  max: number;
 }
 
 export interface StrokeDpData {
