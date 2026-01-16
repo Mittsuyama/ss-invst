@@ -8,6 +8,7 @@ import {
   registerOverlay,
   registerFigure,
   Chart as ChartObject,
+  TooltipShowRule,
 } from 'klinecharts';
 import { PeriodType, PriceAndVolumeItem } from '@shared/types/stock';
 import {
@@ -103,13 +104,15 @@ interface ChartProps {
   className?: string;
   /** 是否显示成交量 */
   hideVol?: boolean;
-  /** 指标高度 */
-  indicatorHeight?: number;
   /** 隐藏重置缩放按钮 */
   hideResetScale?: boolean;
+  /** 迷你图 */
+  mini?: boolean;
 }
 
 const DEFAULT_SCALE = 0.2;
+const LARGET_INDICATOR_HEIGHT = 80;
+const MINI_INDICATOR_HEIGHT = 48;
 
 const CHART_ID_PREFIX = 'detail-klines';
 export const Chart = memo(
@@ -120,8 +123,8 @@ export const Chart = memo(
     overlayVisible = true,
     className,
     hideVol,
-    indicatorHeight = 80,
     hideResetScale,
+    mini,
   }: ChartProps) => {
     const theme = useAtomValue(themeAtom);
     const [scaleInPeriod, setScaleInPeriod] = useAtom(scaleInPeriodAtom);
@@ -224,18 +227,21 @@ export const Chart = memo(
               },
             ],
             tooltip: {
-              // showRule: TooltipShowRule.None,
+              showRule: mini ? TooltipShowRule.FollowCross : TooltipShowRule.Always,
             },
           },
           separator: {
             color: theme === 'dark' ? '#333' : '#ddd',
           },
           xAxis: {
+            size: mini ? 0 : 28,
+            show: !mini,
             axisLine: {
               color: theme === 'dark' ? '#333' : '#ddd',
             },
           },
           yAxis: {
+            size: mini ? 0 : 54,
             show: false,
             // axisLine: {
             //   color: theme === 'dark' ? '#333' : '#ddd',
@@ -253,12 +259,14 @@ export const Chart = memo(
             },
             priceMark: {
               last: {
+                show: !mini,
                 upColor: PRICE_COLOR,
                 downColor: PRICE_COLOR,
                 noChangeColor: PRICE_COLOR,
               },
             },
             tooltip: {
+              showRule: mini ? TooltipShowRule.FollowCross : TooltipShowRule.Always,
               custom: [
                 { title: 'open', value: '{open}' },
                 { title: 'high', value: '{high}' },
@@ -282,7 +290,7 @@ export const Chart = memo(
             },
           },
           true,
-          { id: 'candle_pane', height: indicatorHeight },
+          { id: 'candle_pane', height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
         );
         // chart.createIndicator('BBI', true, { id: 'candle_pane' });
         !hideVol && chart.createIndicator('VOL');
@@ -297,10 +305,12 @@ export const Chart = memo(
             },
           },
           false,
-          { height: indicatorHeight },
+          { height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
         );
         // chart.createIndicator('KDJ');
-        chart.createIndicator('MACD', false, { height: indicatorHeight });
+        chart.createIndicator('MACD', false, {
+          height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT,
+        });
         chart.zoomAtTimestamp(unchangableScale || DEFAULT_SCALE, list[list.length - 1].timestamp);
         chart.subscribeAction(ActionType.OnCrosshairChange, (e) => {
           if (typeof e === 'object' && e && 'kLineData' in e) {
@@ -331,8 +341,8 @@ export const Chart = memo(
       unchangableScale,
       setCurrent,
       hideVol,
-      indicatorHeight,
       id,
+      mini,
     ]);
 
     return (

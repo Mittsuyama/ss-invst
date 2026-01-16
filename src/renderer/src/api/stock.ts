@@ -81,7 +81,7 @@ export const fetchFilterList = async (
     {
       pageSize,
       pageNo: page,
-      fingerprint: 'f95cc8cd33dbefa5237c65ac21b3c1b3',
+      fingerprint: '49772fe3016d8bb801d15a6a329ab7ac',
       biz: 'web_ai_select_stocks',
       keyWordNew: rule,
     },

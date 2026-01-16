@@ -116,8 +116,9 @@ export const Detail = memo((props: DetailProps) => {
             <TabsList>
               {[
                 ChartType.WEEK_AND_DAY,
+                ChartType.DAY_AND_HALF_HOUR,
                 ChartType.DAY_AND_FIFTEEN_MINUTE,
-                // ChartType.DAY_AND_FIVE_MINUTE,
+                ChartType.DAY_AND_FIVE_MINUTE,
                 ChartType.FIFTEEN_MINUTE,
                 ChartType.DAY,
                 ChartType.WEEK,

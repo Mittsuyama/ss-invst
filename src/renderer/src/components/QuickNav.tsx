@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
+import { toast } from 'sonner';
 import { useHistory, useParams } from 'react-router-dom';
 import { RotateCcw, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import { useAtom, useAtomValue } from 'jotai';
@@ -180,6 +181,8 @@ const SimpleItem = memo((props: SimpleItemProps) => {
     if (typeof value !== 'number') {
       return <div className="text-foreground">-</div>;
     }
+    const max = 85;
+    const min = 10;
     return (
       <div
         className="flex-1 text-muted-foreground flex items-center"
@@ -210,8 +213,9 @@ const SimpleItem = memo((props: SimpleItemProps) => {
         <div className="text-xs text-muted-foreground">{code}</div>
       </div>
       <div className="ml-auto mr-7 flex flex-col items-end text-xs font-mono">
-        {kdjRender(detail.kdj_week, 'W')}
-        {kdjRender(detail.kdj_day, 'D')}
+        {kdjRender(detail.kdj_week * 0.2 + detail.kdj_day * 0.8)}
+        {/* {kdjRender(detail.kdj_week, 'W')} */}
+        {/* {kdjRender(detail.kdj_day, 'D')} */}
         {/* {kdjRender(detail.kdj_half_hour)} */}
       </div>
       <div className="flex-none flex flex-col items-center">
@@ -254,11 +258,11 @@ export const QuickNav = memo(() => {
     if (!d) {
       return b.totalMarketValue - a.totalMarketValue;
     }
-    const key: keyof FilterItem = 'kdj_fifteen_minute';
+    const computeValueWithWeight = (item: FilterItem) => item.kdj_day * 0.8 + item.kdj_week * 0.2;
     if (d === 'asc') {
-      return a[key] - b[key];
+      return computeValueWithWeight(a) - computeValueWithWeight(b);
     }
-    return b[key] - a[key];
+    return computeValueWithWeight(b) - computeValueWithWeight(a);
   });
 
   const fetchFilterList = useMemoizedFn(async (ids: string[], d = direction) => {
@@ -270,11 +274,15 @@ export const QuickNav = memo(() => {
         {
           pageSize: 100,
           pageNo: 1,
-          fingerprint: 'f95cc8cd33dbefa5237c65ac21b3c1b3',
+          fingerprint: '49772fe3016d8bb801d15a6a329ab7ac',
           biz: 'web_ai_select_stocks',
           keyWordNew: `${ids.map((item) => item.split('.')[1]).join(';')};周线周期KDJ(J值);日线周期KDJ(J值);30分钟线周期KDJ(J值);15分钟线周期KDJ(J值)`,
         },
       );
+      if (res.code !== '100') {
+        toast.error(res.msg || `code ${res.code}: 未知错误`);
+        return;
+      }
       setOptions(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (res.data.result.dataList as any[])
@@ -376,7 +384,7 @@ export const QuickNav = memo(() => {
       </div>
       <div className="flex-none flex px-6 mt-3 mb-1 justify-between text-sm text-muted-foreground">
         <div>名称</div>
-        <div>KDJ (周/日)</div>
+        <div>KDJ (加权)</div>
         <div>涨跌幅</div>
       </div>
       <div className="flex-1 overflow-auto px-3 no-scrollbar">

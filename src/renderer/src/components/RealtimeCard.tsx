@@ -56,9 +56,9 @@ export const RealtimeCard = memo((props: RealtimeCardProps) => {
       </div>
       <div className="h-[320px] p-2">
         <Chart
+          mini
           hideVol
           hideResetScale
-          indicatorHeight={48}
           className="border-none"
           id={id}
           period={PeriodType.FIFTEEN_MINUTE}
