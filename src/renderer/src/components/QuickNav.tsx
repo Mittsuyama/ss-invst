@@ -176,8 +176,6 @@ const SimpleItem = memo((props: SimpleItemProps) => {
   const { id: idFromParams } = useParams<{ id: string }>();
 
   const kdjRender = (value?: number, label?: string) => {
-    const max = 80;
-    const min = 20;
     if (typeof value !== 'number') {
       return <div className="text-foreground">-</div>;
     }

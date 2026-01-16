@@ -11,7 +11,6 @@ import { RealtimeCard } from '@/components/RealtimeCard';
 import { SearchPannel } from '@/components/SearchPannel';
 import { useMemoizedFn } from 'ahooks';
 import { fetchFilterList } from '@renderer/api/stock';
-import { Portal } from 'vaul';
 
 export const Realtime = memo(() => {
   const [ids, setIds] = useAtom(realtimeStockIdListAtom);
@@ -104,7 +103,7 @@ export const Realtime = memo(() => {
         <div className="grid grid-cols-3 lg:grid-cols-4 px-6 my-2 gap-3">
           {list?.map((item) => (
             <RealtimeCard
-              value={item.kdj_fifteen_minute}
+              value={item.kdj_half_hour}
               name={item.name}
               key={`${item.id}-${count}`}
               id={item.id}
