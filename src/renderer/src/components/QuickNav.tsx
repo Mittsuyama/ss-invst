@@ -1,14 +1,11 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState, useRef } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
-import { toast } from 'sonner';
 import { useHistory, useParams } from 'react-router-dom';
 import { RotateCcw, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import { useAtom, useAtomValue } from 'jotai';
 import { AreaChart } from '@visactor/react-vchart';
-import { RequestType } from '@shared/types/request';
-import { request } from '@/lib/request';
 import { GREEN_RGB, RED_RGB, GREEN_COLOR, RED_COLOR } from '@/lib/constants';
 import { FilterItem, HistoryOption } from '@renderer/types/search';
 import { PriceAndVolumeItem } from '@shared/types/stock';
@@ -28,6 +25,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Direction } from '@shared/types/meta';
 import { searchOpenAtom } from '@renderer/models/search';
+import { fetchFilterList } from '@renderer/api/stock';
 
 interface NavItemProps {
   detail: HistoryOption;
@@ -221,11 +219,11 @@ const SimpleItem = memo((props: SimpleItemProps) => {
           style={{
             background: `rgba(${!chg ? '100, 100, 100' : chg > 0 ? RED_RGB : GREEN_RGB}, 1)`,
           }}
-          className="w-14 h-6 text-white text-xs flex justify-center items-center rounded-sm mb-1"
+          className="w-13 h-6 text-white text-[10px] flex justify-center items-center rounded-sm mb-1"
         >
           {chg.toFixed(2)}%
         </div>
-        <div className="text-xs text-muted-foreground">{price}</div>
+        <div className="text-[10px] text-muted-foreground">{price}</div>
       </div>
     </div>
   );
@@ -244,6 +242,7 @@ export const QuickNav = memo(() => {
   const [direction, setDirection] = useAtom(quickNavDirectionAtom);
   const [options, setOptions] = useState<FilterItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const fetchingRef = useRef(false);
 
   const idList = useMemo(
     () =>
@@ -263,52 +262,20 @@ export const QuickNav = memo(() => {
     return computeValueWithWeight(b) - computeValueWithWeight(a);
   });
 
-  const fetchFilterList = useMemoizedFn(async (ids: string[], d = direction) => {
+  const fetch = useMemoizedFn(async (ids: string[], d = direction) => {
+    if (fetchingRef.current) {
+      return;
+    }
+    fetchingRef.current = true;
     try {
       setLoading(true);
-      const res = await request(
-        RequestType.POST,
-        'https://np-tjxg-g.eastmoney.com/api/smart-tag/stock/v3/pw/search-code',
-        {
-          pageSize: 100,
-          pageNo: 1,
-          fingerprint: '49772fe3016d8bb801d15a6a329ab7ac',
-          biz: 'web_ai_select_stocks',
-          keyWordNew: `${ids.map((item) => item.split('.')[1]).join(';')};周线周期KDJ(J值);日线周期KDJ(J值);30分钟线周期KDJ(J值);15分钟线周期KDJ(J值)`,
-        },
+      const res = await fetchFilterList(
+        `股票代码${ids.map((item) => item.split('.')[1]).join('或')};周线周期KDJ(J值);日线周期KDJ(J值)`,
       );
-      if (res.code !== '100') {
-        toast.error(res.msg || `code ${res.code}: 未知错误`);
-        return;
-      }
-      setOptions(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (res.data.result.dataList as any[])
-          .map<FilterItem>((item) => {
-            const keys = Object.keys(item);
-            const totakMarketValue = keys.find((key) => key.includes('TOAL_MARKET_VALUE')) || '';
-            const kdjDayKey = keys.find((key) => key.includes('KDJ_J') && !key.includes('<')) || '';
-            const kdjWeekKey = keys.find((key) => key.includes('KDJ_J<80>')) || '';
-            const kdjHalfHourKey = keys.find((key) => key.includes('KDJ_J<40>')) || '';
-            const kdjFifteenMinuteKey = keys.find((key) => key.includes('KDJ_J<30>')) || '';
-            const code = item['SECURITY_CODE'];
-            return {
-              id: ids.find((id) => id.includes(code)) || '',
-              code,
-              name: item['SECURITY_SHORT_NAME'],
-              price: Number(item['NEWEST_PRICE']),
-              chg: Number(item['CHG']),
-              totalMarketValue: Number(item[totakMarketValue].replace('亿', '')),
-              kdj_day: Number(item[kdjDayKey]),
-              kdj_week: Number(item[kdjWeekKey]),
-              kdj_half_hour: Number(item[kdjHalfHourKey]),
-              kdj_fifteen_minute: Number(item[kdjFifteenMinuteKey]),
-            };
-          })
-          .sort((a, b) => sort(a, b, d)),
-      );
+      setOptions(res.list.slice().sort((a, b) => sort(a, b, d)));
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   });
 
@@ -342,8 +309,8 @@ export const QuickNav = memo(() => {
   }, [onKeyDown, searchOpen]);
 
   useEffect(() => {
-    fetchFilterList(idList);
-  }, [idList, fetchFilterList]);
+    fetch(idList);
+  }, [idList, fetch]);
 
   return (
     <div className="pb-4 h-full flex flex-col">
@@ -357,8 +324,9 @@ export const QuickNav = memo(() => {
             <SelectItem value="choice">持有</SelectItem>
           </SelectContent>
         </Select>
+        <div className="ml-2 text-muted-foreground text-sm">{options.length} 条</div>
         <div className="space ml-auto">
-          <Button onClick={() => fetchFilterList(idList)} size="icon" variant="ghost">
+          <Button onClick={() => fetch(idList)} size="icon" variant="ghost">
             <RotateCcw className={clsx({ 'animate-spin': loading })} />
           </Button>
           <Button

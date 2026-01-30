@@ -2,6 +2,7 @@ import { request } from '@/lib/request';
 import { FilterColumn, FilterItem } from '@renderer/types/search';
 import { RequestType } from '@shared/types/request';
 import { StockInfo } from '@shared/types/stock';
+import { toast } from 'sonner';
 
 export const fetchStockInfo = async (id: string): Promise<StockInfo> => {
   const keyMap = {
@@ -79,13 +80,42 @@ export const fetchFilterList = async (
     RequestType.POST,
     'https://np-tjxg-g.eastmoney.com/api/smart-tag/stock/v3/pw/search-code',
     {
-      pageSize,
+      // pageSize,
+      // pageNo: page,
+      // fingerprint: '49772fe3016d8bb801d15a6a329ab7ac',
+      // biz: 'web_ai_select_stocks',
+      pageSize: pageSize,
       pageNo: page,
-      fingerprint: '49772fe3016d8bb801d15a6a329ab7ac',
+      fingerprint: '1e94afb8b5e79e13b550349eef3774e7',
+      matchWord: '',
+      shareToGuba: false,
+      timestamp: '1769484732331244',
+      requestId: 'LF0VneXrMs2I80BYge2Aver27v2MCY371769484798055',
+      removedConditionIdList: [],
+      ownSelectAll: false,
+      needCorrect: true,
+      client: 'WEB',
+      product: '',
+      needShowStockNum: false,
       biz: 'web_ai_select_stocks',
+      xcId: 'xc0f3983269f07000e59',
+      gids: [],
+      dxInfoNew: [],
       keyWordNew: rule,
+      customDataNew: JSON.stringify([
+        {
+          type: 'text',
+          value: rule,
+          extra: '',
+        },
+      ]),
     },
   );
+  if (res.code !== '100') {
+    const msg = res.msg || `code ${res.code}: 未知错误`;
+    toast.error(msg);
+    throw new Error(msg);
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const list = (res.data.result.dataList as any[]).map<FilterItem>((item) => {
     const keys = Object.keys(item);
