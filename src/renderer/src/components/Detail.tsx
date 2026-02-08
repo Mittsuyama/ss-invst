@@ -2,7 +2,7 @@ import { memo, ReactNode, useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
-import { Heart, Aperture, SquareSigma } from 'lucide-react';
+import { Heart, Aperture, SquareSigma, Maximize, Minimize } from 'lucide-react';
 import { ChartType, PriceAndVolumeItem, StockInfo } from '@shared/types/stock';
 import { chartType2PeriodTypes, chartTypeTittle } from '@/lib/constants';
 import {
@@ -10,6 +10,7 @@ import {
   chartTypeAtom,
   chanlunVisibleAtom,
   watchStockIdListAtom,
+  detailFullScreenAtom,
 } from '@/models/detail';
 import { themeAtom } from '@/models/global';
 import { fetchStockInfo } from '@/api/stock';
@@ -29,12 +30,14 @@ interface DetailProps {
   id: string;
   className?: string;
   headerExtra?: ReactNode;
+  sidebar?: boolean;
 }
 
 export const Detail = memo((props: DetailProps) => {
-  const { id, className, headerExtra } = props;
+  const { id, className, headerExtra, sidebar } = props;
   const history = useHistory();
   const theme = useAtomValue(themeAtom);
+  const [fullScreen, setFullScreen] = useAtom(detailFullScreenAtom);
   const [watchIdList, setWatchIdList] = useAtom(watchStockIdListAtom);
   const [favIdList, setFavIdList] = useAtom(favStockIdListAtom);
   const [overlayVisible, setOverlayVisible] = useAtom(chanlunVisibleAtom);
@@ -79,7 +82,7 @@ export const Detail = memo((props: DetailProps) => {
                 <>
                   <div className="title">{info.name}</div>
                   {info.bizName ? <div className="sub-title">{info.bizName}</div> : null}
-                  {info.pe ? (
+                  {typeof info.pe === 'number' ? (
                     <div className="space gap-2">
                       <div className="sub-title">PE:</div>
                       <div className="title">{info.pe / 100}</div>
@@ -119,10 +122,11 @@ export const Detail = memo((props: DetailProps) => {
                 ChartType.DAY_AND_HALF_HOUR,
                 ChartType.DAY_AND_FIFTEEN_MINUTE,
                 ChartType.DAY_AND_FIVE_MINUTE,
-                ChartType.FIFTEEN_MINUTE,
-                ChartType.DAY,
-                ChartType.WEEK,
-                ChartType.MONTH,
+                // ChartType.FIFTEEN_AND_FIVE_MINUTE,
+                ChartType.FIVE_MINUTE,
+                // ChartType.DAY,
+                // ChartType.WEEK,
+                // ChartType.MONTH,
               ].map((c) => (
                 <TabsTrigger className="font-normal" key={c} value={c}>
                   {chartTypeTittle[c]}
@@ -135,6 +139,12 @@ export const Detail = memo((props: DetailProps) => {
               {/* <RotateCcw /> */}
               刷新
             </Button>
+            {!sidebar && (
+              <Button variant="outline" onClick={() => setFullScreen((pre) => !pre)}>
+                {fullScreen ? <Minimize /> : <Maximize />}
+                {fullScreen ? '取消全屏' : '全屏模式'}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setOverlayVisible((pre) => !pre)}>
               {overlayVisible ? (
                 <SquareSigma className="*:[rect]:stroke-red-500 *:[path]:stroke-white fill-red-500" />

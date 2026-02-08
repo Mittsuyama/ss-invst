@@ -3,6 +3,7 @@ import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { Direction } from '@shared/types/meta';
 
+export const detailFullScreenAtom = atom(false);
 export const currentStockIdAtom = atom<string>('');
 export const chartTypeAtom = atomWithStorage<ChartType>(
   'stock-detail-chart-type',

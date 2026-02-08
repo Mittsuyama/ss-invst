@@ -33,6 +33,7 @@ export interface FilterItem {
   price: number;
   chg: number;
   totalMarketValue: number;
+  biz: string;
   kdj_day: number;
   kdj_week: number;
   kdj_half_hour: number;

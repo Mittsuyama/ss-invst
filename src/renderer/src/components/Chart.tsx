@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   init,
@@ -25,6 +25,8 @@ import { computePivotWithDp, computeStrokeSimply } from '@shared/lib/chanlun';
 import { scaleInPeriodAtom } from '@renderer/models/detail';
 import { Button } from '@/components/ui/button';
 import clsx from 'clsx';
+import { useLatestRequest } from '@/hooks/use-latest-request';
+import { PenIcon } from 'lucide-react';
 // import { chanlunComputeRequest } from '@renderer/lib/request';
 
 const STROKE_COLOR = '#888888DD';
@@ -128,10 +130,11 @@ export const Chart = memo(
   }: ChartProps) => {
     const theme = useAtomValue(themeAtom);
     const [scaleInPeriod, setScaleInPeriod] = useAtom(scaleInPeriodAtom);
-    const [list, setList] = useState<PriceAndVolumeItem[] | null>(null);
     const [chart, setChart] = useState<ChartObject | null>(null);
     const [unchangableOverlayVisible] = useState(overlayVisible);
     const [unchangableScale] = useState(scaleInPeriod[period]);
+
+    const { data: list } = useLatestRequest(() => fetchKLines(id, period), [id, period]);
 
     useEffect(() => {
       (async () => {
@@ -192,20 +195,6 @@ export const Chart = memo(
         }
       });
     }, [chart, overlayVisible]);
-
-    useEffect(() => {
-      let didCancel = false;
-      (async () => {
-        const list = await fetchKLines(id, period);
-        if (didCancel) {
-          return;
-        }
-        setList(list);
-      })();
-      return () => {
-        didCancel = true;
-      };
-    }, [period, id, theme]);
 
     useEffect(() => {
       if (!list) {
@@ -308,9 +297,16 @@ export const Chart = memo(
           { height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
         );
         // chart.createIndicator('KDJ');
-        chart.createIndicator('MACD', false, {
-          height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT,
+        chart.createIndicator({
+          name: 'MACD',
+          calcParams: period === PeriodType.DAY ? [5, 35, 5] : undefined,
+          styles: {
+            height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT,
+          },
         });
+        // chart.createIndicator('MACD', false, {
+        //   height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT,
+        // });
         chart.zoomAtTimestamp(unchangableScale || DEFAULT_SCALE, list[list.length - 1].timestamp);
         chart.subscribeAction(ActionType.OnCrosshairChange, (e) => {
           if (typeof e === 'object' && e && 'kLineData' in e) {

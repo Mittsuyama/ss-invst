@@ -134,9 +134,22 @@
   .space {
     @apply flex items-center;
   }
-  .no-scrollbar::-webkit-scrollbar {
-    width: 0px;
-  }
+}
+
+html[class='dark'] *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: oklch(0.145 0 0);
+}
+
+html[class='dark'] *::-webkit-scrollbar-thumb {
+  border-radius: 100px;
+  background-color: oklch(0.385 0 0);
+}
+
+html[class='dark'] *::-webkit-scrollbar-thumb:hover {
+  border-radius: 100px;
+  background-color: oklch(0.485 0 0);
 }
 
 html,

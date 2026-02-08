@@ -102,6 +102,7 @@ export const fetchFilterList = async (
       price: Number(item['NEWEST_PRICE']),
       chg: Number(item['CHG']),
       totalMarketValue: Number(item[totakMarketValue].replace('亿', '')),
+      biz: item.INDUSTRY || '-',
       kdj_day: Number(item[kdjDayKey]),
       kdj_week: Number(item[kdjWeekKey]),
       kdj_half_hour: Number(item[kdjHalfHourKey]),

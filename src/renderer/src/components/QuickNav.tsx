@@ -8,6 +8,7 @@ import { RotateCcw, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide } from '
 import { useAtom, useAtomValue } from 'jotai';
 import { AreaChart } from '@visactor/react-vchart';
 import { RequestType } from '@shared/types/request';
+import { useLatestRequest } from '@/hooks/use-latest-request';
 import { request } from '@/lib/request';
 import { GREEN_RGB, RED_RGB, GREEN_COLOR, RED_COLOR } from '@/lib/constants';
 import { FilterItem, HistoryOption } from '@renderer/types/search';
@@ -28,6 +29,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Direction } from '@shared/types/meta';
 import { searchOpenAtom } from '@renderer/models/search';
+import { fetchFilterList } from '@renderer/api/stock';
 
 interface NavItemProps {
   detail: HistoryOption;
@@ -200,6 +202,7 @@ const SimpleItem = memo((props: SimpleItemProps) => {
 
   return (
     <div
+      data-nav-stock-id={detail.id}
       className={clsx('flex px-3 py-2 my-0.5 rounded-md items-center cursor-default', {
         'bg-accent': id === idFromParams,
         'hover:bg-accent': id !== idFromParams,
@@ -243,12 +246,9 @@ export const QuickNav = memo(() => {
   const searchOpen = useAtomValue(searchOpenAtom);
   const [direction, setDirection] = useAtom(quickNavDirectionAtom);
   const [options, setOptions] = useState<FilterItem[]>([]);
-  const [loading, setLoading] = useState(false);
 
   const idList = useMemo(
-    () =>
-      // type === 'choice' ? favStockIdList : Array.from(new Set([...favStockIdList, ...watchIdList])),
-      type === 'choice' ? favStockIdList : watchIdList,
+    () => (type === 'choice' ? favStockIdList : watchIdList),
     [type, favStockIdList, watchIdList],
   );
 
@@ -263,69 +263,42 @@ export const QuickNav = memo(() => {
     return computeValueWithWeight(b) - computeValueWithWeight(a);
   });
 
-  const fetchFilterList = useMemoizedFn(async (ids: string[], d = direction) => {
-    try {
-      setLoading(true);
-      const res = await request(
-        RequestType.POST,
-        'https://np-tjxg-g.eastmoney.com/api/smart-tag/stock/v3/pw/search-code',
-        {
-          pageSize: 100,
-          pageNo: 1,
-          fingerprint: '49772fe3016d8bb801d15a6a329ab7ac',
-          biz: 'web_ai_select_stocks',
-          keyWordNew: `${ids.map((item) => item.split('.')[1]).join(';')};周线周期KDJ(J值);日线周期KDJ(J值);30分钟线周期KDJ(J值);15分钟线周期KDJ(J值)`,
-        },
-      );
-      if (res.code !== '100') {
-        toast.error(res.msg || `code ${res.code}: 未知错误`);
-        return;
-      }
-      setOptions(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (res.data.result.dataList as any[])
-          .map<FilterItem>((item) => {
-            const keys = Object.keys(item);
-            const totakMarketValue = keys.find((key) => key.includes('TOAL_MARKET_VALUE')) || '';
-            const kdjDayKey = keys.find((key) => key.includes('KDJ_J') && !key.includes('<')) || '';
-            const kdjWeekKey = keys.find((key) => key.includes('KDJ_J<80>')) || '';
-            const kdjHalfHourKey = keys.find((key) => key.includes('KDJ_J<40>')) || '';
-            const kdjFifteenMinuteKey = keys.find((key) => key.includes('KDJ_J<30>')) || '';
-            const code = item['SECURITY_CODE'];
-            return {
-              id: ids.find((id) => id.includes(code)) || '',
-              code,
-              name: item['SECURITY_SHORT_NAME'],
-              price: Number(item['NEWEST_PRICE']),
-              chg: Number(item['CHG']),
-              totalMarketValue: Number(item[totakMarketValue].replace('亿', '')),
-              kdj_day: Number(item[kdjDayKey]),
-              kdj_week: Number(item[kdjWeekKey]),
-              kdj_half_hour: Number(item[kdjHalfHourKey]),
-              kdj_fifteen_minute: Number(item[kdjFifteenMinuteKey]),
-            };
-          })
-          .sort((a, b) => sort(a, b, d)),
-      );
-    } finally {
-      setLoading(false);
-    }
-  });
+  const { data, loading, refresh } = useLatestRequest(async () => {
+    const res = await fetchFilterList(
+      `${idList.map((item) => item.split('.')[1]).join(';')};周线周期KDJ(J值);日线周期KDJ(J值);30分钟线周期KDJ(J值);15分钟线周期KDJ(J值);行业`,
+    );
+    return res.list;
+  }, [idList]);
+
+  useEffect(() => {
+    setOptions(data?.slice()?.sort((a, b) => sort(a, b, direction)) || []);
+  }, [data, direction, sort]);
 
   const onKeyDown = useMemoizedFn((e: KeyboardEvent) => {
     const index = options.findIndex((item) => item.id === idFromParams);
+
+    if (options.length < 1) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     if (e.key === 'ArrowUp') {
-      if (index > 0) {
-        history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', options[index - 1].id));
-        document.querySelector(`[data-nav-stock-id="${options[index - 1].id}"]`)?.scrollIntoView();
-      }
+      const prev = index > 0 ? index - 1 : options.length - 1;
+      history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', options[prev].id));
+      document.querySelector(`[data-nav-stock-id="${options[prev].id}"]`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
       e.preventDefault();
       e.stopPropagation();
     } else if (e.key === 'ArrowDown') {
-      if (index < options.length - 1) {
-        history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', options[index + 1].id));
-        document.querySelector(`[data-nav-stock-id="${options[index + 1].id}"]`)?.scrollIntoView();
-      }
+      const next = index < options.length - 1 ? index + 1 : 0;
+      history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', options[next].id));
+      document.querySelector(`[data-nav-stock-id="${options[next].id}"]`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
       e.preventDefault();
       e.stopPropagation();
     }
@@ -341,10 +314,6 @@ export const QuickNav = memo(() => {
     };
   }, [onKeyDown, searchOpen]);
 
-  useEffect(() => {
-    fetchFilterList(idList);
-  }, [idList, fetchFilterList]);
-
   return (
     <div className="pb-4 h-full flex flex-col">
       <div className="flex-none px-5 pt-1 mb-1 text-sm text-muted-foreground space">
@@ -358,14 +327,12 @@ export const QuickNav = memo(() => {
           </SelectContent>
         </Select>
         <div className="space ml-auto">
-          <Button onClick={() => fetchFilterList(idList)} size="icon" variant="ghost">
+          <Button onClick={() => refresh()} size="icon" variant="ghost">
             <RotateCcw className={clsx({ 'animate-spin': loading })} />
           </Button>
           <Button
             onClick={() => {
-              const d = !direction ? 'desc' : direction === 'desc' ? 'asc' : null;
-              setDirection(d);
-              setOptions(options.slice().sort((a, b) => sort(a, b, d)));
+              setDirection((pre) => (!pre ? 'desc' : pre === 'desc' ? 'asc' : null));
             }}
             size="icon"
             variant="ghost"
@@ -385,9 +352,9 @@ export const QuickNav = memo(() => {
         <div>KDJ (加权)</div>
         <div>涨跌幅</div>
       </div>
-      <div className="flex-1 overflow-auto px-3 no-scrollbar">
+      <div className="flex-1 overflow-auto px-3">
         {options.map((detail) => (
-          <SimpleItem data-nav-stock-id={detail.id} key={detail.id} detail={detail} />
+          <SimpleItem key={detail.id} detail={detail} />
         ))}
       </div>
     </div>

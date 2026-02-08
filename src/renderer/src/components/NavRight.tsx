@@ -3,7 +3,7 @@ import { useAtom } from 'jotai';
 import { clsx } from 'clsx';
 import { useHistory } from 'react-router-dom';
 import { useMemoizedFn } from 'ahooks';
-import { Sun, Moon, SunMoon, Clover } from 'lucide-react';
+import { Sun, Moon, SunMoon, Clover, FolderGit2 } from 'lucide-react';
 import { RouterKey } from '@/types/global';
 import { FilterItem } from '@/types/search';
 import { useTheme } from '@/hooks/use-theme';
@@ -18,6 +18,7 @@ import { fetchFilterList } from '@renderer/api/stock';
 import { searchOpenAtom } from '@renderer/models/search';
 
 import { SearchPannel } from './SearchPannel';
+import { LocalStorageDialog } from './LocalStorageDialog';
 
 interface NavRightProps {
   className?: string;
@@ -29,6 +30,7 @@ export const NavRight = memo((props: NavRightProps) => {
   const { themeSetting, onThemeSettingChange } = useTheme();
   const [searchOpen, setSearchOpen] = useAtom(searchOpenAtom);
   const [candidates, setCadidates] = useState<FilterItem[] | null>(null);
+  const [localStorageOpen, setLocalStorageOpen] = useState(false);
 
   const onRandom = useMemoizedFn(async () => {
     let list = candidates?.slice();
@@ -82,6 +84,8 @@ export const NavRight = memo((props: NavRightProps) => {
         onSecuritySelect={(id) => history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', id))}
       />
 
+      <LocalStorageDialog open={localStorageOpen} onOpenChange={setLocalStorageOpen} />
+
       <div
         className="flex px-2 py-1 mr-2 text-sm text-muted-foreground gap-8 items-center rounded-md bg-muted border-2 border-transparent hover:border-muted-foreground/30 cursor-pointer"
         onClick={() => setSearchOpen(true)}
@@ -103,6 +107,18 @@ export const NavRight = memo((props: NavRightProps) => {
           <DropdownMenuItem onClick={() => onThemeSettingChange('dark')}>深色</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Tooltip>
+        <TooltipTrigger className="rounded-md">
+          <div
+            onClick={() => setLocalStorageOpen((pre) => !pre)}
+            className={clsx('p-2 hover:bg-muted rounded-md')}
+          >
+            <FolderGit2 size={17} />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>调整本地数据</TooltipContent>
+      </Tooltip>
 
       <Tooltip>
         <TooltipTrigger className="rounded-md">

@@ -1,11 +1,10 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import clsx from 'clsx';
 import { request } from '@renderer/lib/request';
 import { RequestType } from '@shared/types/request';
-import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { MoreHorizontal, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
 import {
   Table,
   TableBody,
@@ -29,22 +28,24 @@ import { fetchFilterList } from '@renderer/api/stock';
 import { FilterColumn, FilterItem } from '@renderer/types/search';
 
 const COLUMN_ORDER = [
-  'SERIAL',
-  'SECURITY_CODE',
-  'SECURITY_SHORT_NAME',
-  'KDJ_J',
-  'NEWEST_PRICE',
-  'CHG',
-  'PETTMDEDUCTED',
-  'ROE_WEIGHT',
-  'PB',
-  'TOAL_MARKET_VALUE',
-  'TRADING_VOLUMES',
-  'TURNOVER_RATE',
+  '^SERIAL',
+  '^SECURITY_CODE',
+  '^SECURITY_SHORT_NAME',
+  '^INDUSTRY',
+  '^KDJ_J',
+  '^NEWEST_PRICE',
+  '^CHG',
+  '^PETTMDEDUCTED',
+  // '^ROE_WEIGHT{.+}$',
+  '^PB',
+  '^TOAL_MARKET_VALUE',
+  '^TRADING_VOLUMES',
+  '^TURNOVER_RATE',
 ];
 
-const CONDITION =
-  '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;上市时间>2年;总市值>50亿';
+// const CONDITION =
+//   '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;上市时间>2年;总市值>50亿;行业';
+const CONDITION = '市盈率TTM(扣非);日线周期KDJ(J值)<5;总市值>50亿;行业';
 
 export const Filter = memo(() => {
   const [loading, setLoading] = useState(false);
@@ -71,10 +72,10 @@ export const Filter = memo(() => {
       const { list, total, columns } = await fetchFilterList(CONDITION, { page, pageSize });
       setColumns(
         columns
-          .filter((item) => COLUMN_ORDER.some((c) => item.key.startsWith(c)))
+          .filter((item) => COLUMN_ORDER.some((c) => new RegExp(c).test(item.key)))
           .sort((a, b) => {
-            const aIndex = COLUMN_ORDER.findIndex((c) => a.key.startsWith(c));
-            const bIndex = COLUMN_ORDER.findIndex((c) => b.key.startsWith(c));
+            const aIndex = COLUMN_ORDER.findIndex((c) => new RegExp(c).test(a.key));
+            const bIndex = COLUMN_ORDER.findIndex((c) => new RegExp(c).test(b.key));
             return aIndex - bIndex;
           }),
       );
@@ -118,9 +119,9 @@ export const Filter = memo(() => {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
+      if (e.key === 'ArrowUp') {
         onPrevious();
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === 'ArrowDown') {
         onNext();
       }
     };
@@ -172,6 +173,19 @@ export const Filter = memo(() => {
     </PaginationItem>
   );
 
+  const bizList = useMemo(() => {
+    const industryMap = new Map<string, number>();
+    records.forEach((record) => {
+      const industry = record.biz;
+      if (industryMap.has(industry)) {
+        industryMap.set(industry, industryMap.get(industry)! + 1);
+      } else {
+        industryMap.set(industry, 1);
+      }
+    });
+    return Array.from(industryMap.entries()).sort((a, b) => b[1] - a[1]);
+  }, [records]);
+
   return (
     <>
       <div
@@ -179,7 +193,7 @@ export const Filter = memo(() => {
           'pointer-events-none opacity-40': loading,
         })}
       >
-        <div className="space mb-4 px-1 flex-none">
+        <div className="space mb-2 px-1 flex-none">
           <div className="font-bold mr-4">条件选股</div>
           <div className="text-sm text-muted-foreground pl-1">{CONDITION}</div>
           <div className="ml-auto">
@@ -189,6 +203,29 @@ export const Filter = memo(() => {
             </Button>
           </div>
         </div>
+        {!!records && (
+          <div className="flex-none flex gap-4 items-center mb-4 text-muted-foreground text-sm">
+            <div className="flex gap-2 items-center">
+              <div>总数</div>
+              <div>{total}</div>
+            </div>
+            <div>|</div>
+            <div>当前页</div>
+            {bizList
+              .filter(([, count]) => count >= 3)
+              .map(([biz, count]) => (
+                <div key={biz} className="flex gap-2 items-center">
+                  <div>{biz}</div>
+                  <div>{count}</div>
+                </div>
+              ))}
+            {bizList.some(([, count]) => count < 3) && (
+              <div className="flex gap-2 items-center">
+                <MoreHorizontal size={16} />
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex-1 overflow-auto">
           <div className="p-4 border rounded-2xl">
             <Table>
@@ -277,7 +314,7 @@ export const Filter = memo(() => {
       </div>
       <Drawer open={!!current} onClose={() => setCurrent(null)} direction="right">
         <DrawerContent
-          className="flex flex-col"
+          className="flex flex-col ring-0 outline-0"
           style={{ width: 'calc(100% - 260px)', maxWidth: '100%' }}
         >
           <div
@@ -285,20 +322,21 @@ export const Filter = memo(() => {
           >
             {currentId ? (
               <Detail
+                sidebar
                 className="h-full"
                 id={currentId}
-                headerExtra={
-                  <ButtonGroup className="text-sm">
-                    <Button variant="outline" onClick={onPrevious}>
-                      <ChevronLeft className="" />
-                      上一个
-                    </Button>
-                    <Button variant="outline" onClick={onNext}>
-                      下一个
-                      <ChevronRight className="" />
-                    </Button>
-                  </ButtonGroup>
-                }
+                // headerExtra={
+                //   <ButtonGroup className="text-sm">
+                //     <Button variant="outline" onClick={onPrevious}>
+                //       <ChevronLeft className="" />
+                //       上一个
+                //     </Button>
+                //     <Button variant="outline" onClick={onNext}>
+                //       下一个
+                //       <ChevronRight className="" />
+                //     </Button>
+                //   </ButtonGroup>
+                // }
               />
             ) : null}
           </div>

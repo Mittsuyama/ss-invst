@@ -1,4 +1,5 @@
 import { Route, Switch, Redirect, useHistory } from 'react-router-dom';
+import clsx from 'clsx';
 import { PiggyBank } from 'lucide-react';
 import { RouterKey } from '@/types/global';
 import { ChoiceOverview } from '@/pages/ChoiceOverview';
@@ -18,6 +19,9 @@ import { NavRight } from '@/components/NavRight';
 import { Toaster } from '@/components/ui/sonner';
 // import { NavFooter } from '@renderer/components/layout-components';
 import '@/assets/main.css';
+import { useAtomValue } from 'jotai';
+import { detailFullScreenAtom } from './models/detail';
+import { Fullscreen } from 'lucide';
 
 const ROUTES: Array<{
   key: string;
@@ -60,11 +64,17 @@ const ROUTES: Array<{
 
 function App() {
   const history = useHistory();
+  const detailFullScreen = useAtomValue(detailFullScreenAtom);
 
   return (
     <>
       <div className="w-full h-full overflow-hidden flex flex-col bg-semi-color-bg-0 bg-background text-foreground">
-        <div className="flex-none w-full py-4 px-6 space">
+        <div
+          className={clsx('flex-none w-full py-4 px-6 items-center', {
+            hidden: detailFullScreen,
+            flex: !detailFullScreen,
+          })}
+        >
           <PiggyBank className="text-foreground mr-2" size={26} />
           <NavigationMenu>
             <NavigationMenuList>
@@ -83,7 +93,11 @@ function App() {
           </NavigationMenu>
           <NavRight className="ml-auto" />
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div
+          className={clsx('flex-1 overflow-hidden', {
+            'pt-4': detailFullScreen,
+          })}
+        >
           <Switch>
             {ROUTES.map((item) => (
               <Route key={item.key} path={item.key} component={item.FC} />
