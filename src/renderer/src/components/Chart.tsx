@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   init,
@@ -26,8 +26,6 @@ import { scaleInPeriodAtom } from '@renderer/models/detail';
 import { Button } from '@/components/ui/button';
 import clsx from 'clsx';
 import { useLatestRequest } from '@/hooks/use-latest-request';
-import { PenIcon } from 'lucide-react';
-// import { chanlunComputeRequest } from '@renderer/lib/request';
 
 const STROKE_COLOR = '#888888DD';
 // const PIVOT_COLOR = '#00a6ff';

@@ -1,9 +1,9 @@
-import { memo, ReactNode, useEffect, useState } from 'react';
+import { memo, ReactNode, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import { Heart, Aperture, SquareSigma, Maximize, Minimize } from 'lucide-react';
-import { ChartType, PriceAndVolumeItem, StockInfo } from '@shared/types/stock';
+import { ChartType, PriceAndVolumeItem } from '@shared/types/stock';
 import { chartType2PeriodTypes, chartTypeTittle } from '@/lib/constants';
 import {
   favStockIdListAtom,
@@ -12,7 +12,6 @@ import {
   watchStockIdListAtom,
   detailFullScreenAtom,
 } from '@/models/detail';
-import { themeAtom } from '@/models/global';
 import { fetchStockInfo } from '@/api/stock';
 import {
   Breadcrumb,
@@ -23,6 +22,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
+import { useLatestRequest } from '@/hooks/use-latest-request';
 
 import { Chart } from './Chart';
 
@@ -36,29 +36,15 @@ interface DetailProps {
 export const Detail = memo((props: DetailProps) => {
   const { id, className, headerExtra, sidebar } = props;
   const history = useHistory();
-  const theme = useAtomValue(themeAtom);
   const [fullScreen, setFullScreen] = useAtom(detailFullScreenAtom);
   const [watchIdList, setWatchIdList] = useAtom(watchStockIdListAtom);
   const [favIdList, setFavIdList] = useAtom(favStockIdListAtom);
   const [overlayVisible, setOverlayVisible] = useAtom(chanlunVisibleAtom);
   const [chartType, setChartType] = useAtom(chartTypeAtom);
   const [current, setCurrent] = useState<PriceAndVolumeItem | null>(null);
-  const [info, setInfo] = useState<StockInfo | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
-  useEffect(() => {
-    let didCancel = false;
-    (async () => {
-      const info = await fetchStockInfo(id);
-      if (didCancel) {
-        return;
-      }
-      setInfo(info);
-    })();
-    return () => {
-      didCancel = true;
-    };
-  }, [chartType, id, theme]);
+  const { data: info } = useLatestRequest(() => fetchStockInfo(id), [id]);
 
   return (
     <div className={clsx('overflow-hidden flex flex-col', className)}>
