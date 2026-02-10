@@ -1,4 +1,6 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
+import clsx from 'clsx';
+import { useSize, useDebounceFn, useMemoizedFn } from 'ahooks';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   init,
@@ -22,9 +24,9 @@ import {
 import { themeAtom } from '@/models/global';
 import { fetchKLines } from '@/api/klines';
 import { computePivotWithDp, computeStrokeSimply } from '@shared/lib/chanlun';
-import { scaleInPeriodAtom } from '@renderer/models/detail';
-import { Button } from '@/components/ui/button';
-import clsx from 'clsx';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarSpace } from '@/types/global';
+import { barSpaceInPeriodAtom } from '@/models/detail';
 import { useLatestRequest } from '@/hooks/use-latest-request';
 
 const STROKE_COLOR = '#888888DD';
@@ -110,7 +112,18 @@ interface ChartProps {
   mini?: boolean;
 }
 
-const DEFAULT_SCALE = 0.2;
+const BAR_SPACE_SIZE: Record<BarSpace, number> = {
+  [BarSpace.SMALL]: 2.98,
+  [BarSpace.MEDIUM]: 5.76,
+  [BarSpace.LARGE]: 8,
+};
+
+const BAR_SPACE_TITLE: Record<BarSpace, string> = {
+  [BarSpace.SMALL]: '密',
+  [BarSpace.MEDIUM]: '中',
+  [BarSpace.LARGE]: '疏',
+};
+
 const LARGET_INDICATOR_HEIGHT = 80;
 const MINI_INDICATOR_HEIGHT = 48;
 
@@ -127,12 +140,24 @@ export const Chart = memo(
     mini,
   }: ChartProps) => {
     const theme = useAtomValue(themeAtom);
-    const [scaleInPeriod, setScaleInPeriod] = useAtom(scaleInPeriodAtom);
+    const [barSpaceInPeriod, setBarSpaceInPeriod] = useAtom(barSpaceInPeriodAtom);
     const [chart, setChart] = useState<ChartObject | null>(null);
     const [unchangableOverlayVisible] = useState(overlayVisible);
-    const [unchangableScale] = useState(scaleInPeriod[period]);
+    const [unchangableBarSpace] = useState(barSpaceInPeriod[period]);
+    const chartDivRef = useRef<HTMLDivElement>(null);
 
     const { data: list } = useLatestRequest(() => fetchKLines(id, period), [id, period]);
+
+    const { run: onDebouncedResize } = useDebounceFn(
+      () => {
+        chart?.resize();
+      },
+      { wait: 50 },
+    );
+
+    const size = useSize(chartDivRef);
+
+    useEffect(onDebouncedResize, [onDebouncedResize, size]);
 
     useEffect(() => {
       (async () => {
@@ -297,28 +322,21 @@ export const Chart = memo(
         // chart.createIndicator('KDJ');
         chart.createIndicator({
           name: 'MACD',
-          calcParams: period === PeriodType.DAY ? [5, 35, 5] : undefined,
+          calcParams: period === PeriodType.DAY ? [5, 34, 5] : undefined,
           styles: {
             height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT,
           },
         });
-        // chart.createIndicator('MACD', false, {
-        //   height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT,
-        // });
-        chart.zoomAtTimestamp(unchangableScale || DEFAULT_SCALE, list[list.length - 1].timestamp);
+        chart.setBarSpace(
+          unchangableBarSpace && unchangableBarSpace in BAR_SPACE_SIZE
+            ? BAR_SPACE_SIZE[unchangableBarSpace]
+            : BAR_SPACE_SIZE[BarSpace.MEDIUM],
+        );
+        chart.scrollToDataIndex(list.length - 1);
         chart.subscribeAction(ActionType.OnCrosshairChange, (e) => {
           if (typeof e === 'object' && e && 'kLineData' in e) {
             const data = e.kLineData as PriceAndVolumeItem;
             setCurrent?.(data);
-          }
-        });
-        chart.subscribeAction(ActionType.OnZoom, (data) => {
-          const { scale } = (data || {}) as { scale: number };
-          if (scale) {
-            setScaleInPeriod((pre) => ({
-              ...pre,
-              [period]: (pre[period] || DEFAULT_SCALE) * (scale ?? 1),
-            }));
           }
         });
         setChart(chart);
@@ -331,34 +349,43 @@ export const Chart = memo(
       period,
       theme,
       unchangableOverlayVisible,
-      setScaleInPeriod,
-      unchangableScale,
+      unchangableBarSpace,
       setCurrent,
       hideVol,
       id,
       mini,
     ]);
 
+    const onBarSpaceChange = useMemoizedFn((barSpace: BarSpace) => {
+      setBarSpaceInPeriod((pre) => ({
+        ...pre,
+        [period]: barSpace,
+      }));
+      chart?.setBarSpace(BAR_SPACE_SIZE[barSpace]);
+      chart?.scrollToDataIndex((list?.length || 1) - 1);
+    });
+
     return (
       <div className={clsx('relative border rounded-xl w-full h-full overflow-hidden', className)}>
         {!hideResetScale && (
-          <div className="absolute top-1 right-1 text-xs text-muted-foreground flex gap-2 z-20">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setScaleInPeriod((pre) => ({
-                  ...pre,
-                  [period]: DEFAULT_SCALE,
-                }));
-                list && chart?.zoomAtTimestamp(DEFAULT_SCALE, list[list.length - 1].timestamp);
-              }}
+          <div className="absolute top-2 right-2 text-xs text-muted-foreground flex items-center gap-2 z-20">
+            <div className="text-xs text-muted-foreground/50">K 线密度</div>
+            <Tabs
+              value={barSpaceInPeriod[period]}
+              onValueChange={(value) => onBarSpaceChange(value as BarSpace)}
             >
-              重置缩放
-            </Button>
+              <TabsList className="h-8">
+                {[BarSpace.SMALL, BarSpace.MEDIUM, BarSpace.LARGE].map((c) => (
+                  <TabsTrigger key={c} value={c.toString()}>
+                    {BAR_SPACE_TITLE[c]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </div>
         )}
         <div
+          ref={chartDivRef}
           onMouseOut={() => setCurrent?.(null)}
           id={`${CHART_ID_PREFIX}-${id}-${period}`}
           className="w-full h-full overflow-hidden relative z-10"

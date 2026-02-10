@@ -2,6 +2,7 @@ import { ChartType, PeriodType } from '@shared/types/stock';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { Direction } from '@shared/types/meta';
+import { BarSpace } from '@/types/global';
 
 export const detailFullScreenAtom = atom(false);
 export const currentStockIdAtom = atom<string>('');
@@ -58,6 +59,14 @@ export const realtimeDirectionAtom = atomWithStorage<Direction | null>(
 );
 export const scaleInPeriodAtom = atomWithStorage<Partial<Record<PeriodType, number>>>(
   'scale-in-period',
+  {},
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
+export const barSpaceInPeriodAtom = atomWithStorage<Partial<Record<PeriodType, BarSpace>>>(
+  'bar-space-in-period',
   {},
   undefined,
   {

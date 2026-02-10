@@ -15,14 +15,21 @@ const getChanlunK = (origin: PriceAndVolumeItem[]) => {
     low: item.low,
     timestamp: item.timestamp,
   }));
-  let i = 0;
-  let j = 1;
-  while (j < items.length) {
-    // 判断后一个的趋势
-    if (items[j].low < items[i].low && items[j].high > items[j].high) {
+
+  for (let i = 0, j = 1; j < items.length; ) {
+    // 先判断后一个 K 的趋势
+    // 向上
+    if (items[i].low < items[j].low && items[i].high < items[j].high) {
       items[j].trend = 'up';
     }
-    if (items[i].high >= items[j].high && items[i].low <= items[j].low) {
+    // 向下
+    if (items[i].high > items[j].high && items[i].low > items[j].low) {
+      items[j].trend = 'down';
+    }
+
+    // 如果 i 包含 j
+    if (items[i].low <= items[j].low && items[i].high >= items[j].high) {
+      // 根据趋势处理 K 线
       if (items[i].trend === 'up') {
         items[i].low = Math.max(items[i].low, items[j].low);
       } else {
@@ -30,22 +37,22 @@ const getChanlunK = (origin: PriceAndVolumeItem[]) => {
       }
       items[j].enclosed = true;
       j++;
+      // 如果 j 包含 i
     } else if (items[j].high >= items[i].high && items[j].low <= items[i].low) {
       if (items[i].trend === 'up') {
-        items[j].high = Math.min(items[i].high, items[j].high);
-      } else {
         items[j].low = Math.max(items[i].low, items[j].low);
+      } else {
+        items[j].high = Math.min(items[i].high, items[j].high);
       }
-      items[i].enclosed = true;
-      // 被包含的向后传递趋势
-      items[j].trend = items[i].trend;
       i = j;
-      j++;
+      j = i + 1;
+      // 都不包含
     } else {
       i = j;
-      j++;
+      j = i + 1;
     }
   }
+
   // 标记顶底分形
   for (let i = 0; i < items.length; i++) {
     if (items[i].enclosed) {
@@ -88,6 +95,13 @@ const computeDif = (a: ChanlunK, b: ChanlunK) => {
 export const computeStrokeSimply = (origin: PriceAndVolumeItem[]) => {
   const strokes: Stroke[] = [];
   const items = getChanlunK(origin);
+
+  const index = items.findIndex((item) => item.timestamp === 1770258600000);
+  if (index !== -1) {
+    console.log(items[index - 1]);
+    console.log(items[index]);
+    console.log(items[index + 1]);
+  }
 
   const genStroke = (i: number, j: number): Stroke => ({
     type: items[j].fractal === 'top' ? 'up' : 'down',
@@ -160,6 +174,15 @@ export const computeStrokeSimply = (origin: PriceAndVolumeItem[]) => {
     }
     // 不能组成，但 k 的分形和 j 相同，且是一个更大的趋势，延长该笔
     if (items[j].fractal === 'top' && items[k].fractal === 'top' && items[k].high > items[j].high) {
+      j = k;
+      k = j + 1;
+      continue;
+    }
+    if (
+      items[j].fractal === 'bottom' &&
+      items[k].fractal === 'bottom' &&
+      items[k].low < items[j].low
+    ) {
       j = k;
       k = j + 1;
       continue;

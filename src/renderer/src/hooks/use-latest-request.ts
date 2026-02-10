@@ -11,11 +11,19 @@ export const useLatestRequest = <T>(
   const lastDeps = useRef<DependencyList | null>(null);
 
   const refresh = useMemoizedFn(async (didCancel?: { current: boolean }) => {
-    const res = await fetch(didCancel);
-    if (didCancel?.current) {
-      return;
+    try {
+      setLoading(true);
+      const res = await fetch(didCancel);
+      if (didCancel?.current) {
+        return;
+      }
+      setData(res);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {
+      setError(e);
+    } finally {
+      setLoading(false);
     }
-    setData(res);
   });
 
   useEffect(() => {
@@ -26,17 +34,7 @@ export const useLatestRequest = <T>(
       return;
     }
     const didCancel = { current: false };
-    (async () => {
-      try {
-        setLoading(true);
-        await refresh(didCancel);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (e: any) {
-        setError(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    refresh(didCancel);
     return () => {
       didCancel.current = true;
     };

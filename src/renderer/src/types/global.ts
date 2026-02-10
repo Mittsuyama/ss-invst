@@ -22,3 +22,9 @@ export enum RouterKey {
   /** 自选股看板 */
   CHOICE_OVERVIEW = '/choice-overview/:id',
 }
+
+export enum BarSpace {
+  LARGE = 'large',
+  MEDIUM = 'medium',
+  SMALL = 'small',
+}
