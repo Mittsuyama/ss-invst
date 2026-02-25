@@ -24,7 +24,9 @@ export enum RouterKey {
 }
 
 export enum BarSpace {
+  EXTRA_LARGE = 'extra-large',
   LARGE = 'large',
   MEDIUM = 'medium',
   SMALL = 'small',
+  EXTRA_SMALL = 'extra-small',
 }

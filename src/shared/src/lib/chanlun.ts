@@ -96,13 +96,6 @@ export const computeStrokeSimply = (origin: PriceAndVolumeItem[]) => {
   const strokes: Stroke[] = [];
   const items = getChanlunK(origin);
 
-  const index = items.findIndex((item) => item.timestamp === 1770258600000);
-  if (index !== -1) {
-    console.log(items[index - 1]);
-    console.log(items[index]);
-    console.log(items[index + 1]);
-  }
-
   const genStroke = (i: number, j: number): Stroke => ({
     type: items[j].fractal === 'top' ? 'up' : 'down',
     start: {
@@ -187,15 +180,6 @@ export const computeStrokeSimply = (origin: PriceAndVolumeItem[]) => {
       k = j + 1;
       continue;
     }
-    if (
-      items[j].fractal === 'bottom' &&
-      items[k].fractal === 'bottom' &&
-      items[k].low < items[j].low
-    ) {
-      j = k;
-      k = j + 1;
-      continue;
-    }
 
     k++;
   }
@@ -207,97 +191,130 @@ export const computeStrokeSimply = (origin: PriceAndVolumeItem[]) => {
   return strokes;
 };
 
-export const computeSegments = (strokes: Stroke[], direction: Stroke['type']) => {
-  const segments: Segment[] = [];
-  const features: Stroke[] = [];
-  for (let i = 0; i < strokes.length; i++) {
-    // 不同向的笔组成同向线段的特征序列
-    if (strokes[i].type === direction) {
-      continue;
+export const computeSegmentsSimply = (strokes: Stroke[]) => {
+  const res: Segment[] = [];
+  // 预处理数据
+  const pre: Array<{ index: number; type: 'top' | 'bottom' }> = [];
+
+  // 第一个位置无所谓
+  pre.push({
+    index: 0,
+    type: 'top',
+  });
+  for (let i = 1; i < strokes.length - 1; i++) {
+    // 向上的笔就能同时处理顶和底
+    if (strokes[i].type === 'up') {
+      if (
+        strokes[i].end.price > strokes[i - 1].start.price &&
+        i + 2 < strokes.length &&
+        strokes[i].end.price > strokes[i + 2].end.price
+      ) {
+        pre.push({
+          index: i,
+          type: 'top',
+        });
+      }
+      if (
+        strokes[i].start.price < strokes[i + 1].end.price &&
+        i - 2 > 0 &&
+        strokes[i].start.price < strokes[i - 2].start.price
+      ) {
+        pre.push({
+          index: i,
+          type: 'bottom',
+        });
+      }
     }
-    if (!features.length) {
-      features.push({ ...strokes[i] });
-      continue;
-    }
-    const last = features[features.length - 1];
-    const lastHigh = Math.max(last.start.price, last.end.price);
-    const lastLow = Math.min(last.start.price, last.end.price);
-    const currentHigh = Math.max(strokes[i].start.price, strokes[i].end.price);
-    const currentLow = Math.min(strokes[i].start.price, strokes[i].end.price);
-    // 前包含后
-    if (lastHigh > currentHigh && lastLow < currentLow) {
-      last.end.price = strokes[i].end.price;
-      continue;
-    }
-    // 后包含前
-    if (lastHigh < currentHigh && lastLow > currentLow) {
-      const lastPrice = last.end.price;
-      features[features.length - 1] = {
-        ...strokes[i],
-        end: {
-          ...strokes[i].end,
-          price: lastPrice,
-        },
-      };
-      continue;
-    }
-    features.push({ ...strokes[i] });
   }
 
-  const checkIsSameDirection = (i: number, j: number) => {
-    if (i >= features.length || j >= features.length) {
+  const checkIsSegment = (i: number, j: number) => {
+    // 至少得是三笔
+    if (pre[i].type === 'bottom' && pre[j].index - pre[i].index + 1 < 3) {
       return false;
     }
-    if (i >= j) {
+    if (pre[i].type === 'top' && pre[j].index - pre[i].index + 1 < 5) {
       return false;
     }
-    if (direction === 'up') {
-      let flag = true;
-      for (let p = i; p < j; p++) {
-        // 向上的线段的特征序列向下，判断后者的终点是否更高
-        if (!(features[p + 1].end.price > features[p].end.price)) {
-          flag = false;
-          break;
-        }
-      }
-      return flag;
+    // 如果 i 是 0，第一笔随意
+    if (!i) {
+      return true;
     }
-    let flag = true;
-    for (let p = i; p < j; p++) {
-      // 向下的线段的特征序列向上，判断后者的终点是否更低
-      if (!(features[p + 1].end.price < features[p].end.price)) {
-        flag = false;
-        break;
-      }
+    if (i >= pre.length || j >= pre.length) {
+      return false;
     }
-    return flag;
+    if (
+      i < j &&
+      pre[i].type === 'top' &&
+      pre[j].type === 'bottom' &&
+      strokes[pre[i].index].end.price > strokes[pre[j].index].start.price
+    ) {
+      return true;
+    }
+    if (
+      i < j &&
+      pre[i].type === 'bottom' &&
+      pre[j].type === 'top' &&
+      strokes[pre[i].index].start.price < strokes[pre[j].index].end.price
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const genSegment = (i: number, j: number): Segment => {
+    return {
+      type: pre[i].type === 'bottom' ? 'up' : 'down',
+      start: pre[i].type === 'bottom' ? strokes[pre[i].index].start : strokes[pre[i].index].end,
+      end: pre[j].type === 'bottom' ? strokes[pre[j].index].start : strokes[pre[j].index].end,
+    };
   };
 
   let i = 0;
   let j = i + 1;
   let k = j + 1;
-  let l = k + 1;
-  while (i < features.length && j < features.length && k < features.length) {
-    // i, j 不能组成当前 direction 的线段
-    if (!checkIsSameDirection(i, j)) {
-      i++;
-      j = i + 1;
+  while (i < pre.length && j < pre.length && k < pre.length) {
+    // 找到下一个和 i 不同的笔
+    if (!checkIsSegment(i, j)) {
+      j++;
       k = j + 1;
       continue;
     }
-    // i, k 能组成线段，再往后延长
-    if (checkIsSameDirection(i, k)) {
-      k++;
+
+    // 如果能组成新的线段，保存前一笔，向后移动光标
+    if (checkIsSegment(j, k)) {
+      res.push(genSegment(i, j));
+      i = j;
+      j = k;
+      k = j + 1;
       continue;
     }
-    // i, k 不能组成线段，即 k 小于 j，还需要判断 k 后续是否能形成新的 direction 方向的线段
-    if (checkIsSameDirection(k, l)) {
-      l++;
+    // 不能组成，但 k 的分形和 j 相同，且是一个更大的趋势，延长该线段
+    if (
+      pre[j].type === 'top' &&
+      pre[k].type === 'top' &&
+      strokes[pre[k].index].end.price > strokes[pre[j].index].end.price
+    ) {
+      j = k;
+      k = j + 1;
       continue;
     }
+    if (
+      pre[j].type === 'bottom' &&
+      pre[k].type === 'bottom' &&
+      strokes[pre[k].index].start.price < strokes[pre[j].index].start.price
+    ) {
+      j = k;
+      k = j + 1;
+      continue;
+    }
+    k++;
   }
 
-  return segments;
+  if (checkIsSegment(i, j)) {
+    res.push(genSegment(i, j));
+  }
+
+  return res;
 };
 
 export const computeStrokesWithDp = (origin: PriceAndVolumeItem[]) => {

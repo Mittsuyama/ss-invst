@@ -68,10 +68,10 @@ export const Detail = memo((props: DetailProps) => {
                 <>
                   <div className="title">{info.name}</div>
                   {info.bizName ? <div className="sub-title">{info.bizName}</div> : null}
-                  {typeof info.pe === 'number' ? (
+                  {typeof info.cap === 'number' ? (
                     <div className="space gap-2">
-                      <div className="sub-title">PE:</div>
-                      <div className="title">{info.pe / 100}</div>
+                      <div className="sub-title">市值:</div>
+                      <div className="title">{(info.cap / 1_0000_0000).toFixed(0)}亿</div>
                     </div>
                   ) : null}
                 </>
@@ -144,7 +144,7 @@ export const Detail = memo((props: DetailProps) => {
                 variant="outline"
                 onClick={() => setWatchIdList(watchIdList.filter((item) => item !== id))}
               >
-                <Aperture className="*:[path]:stroke-white *:[circle]:stroke-red-500 fill-red-500" />
+                <Aperture className="*:[path]:stroke-red-500 *:[circle]:stroke-red-500 fill-white" />
                 备选
               </Button>
             ) : (

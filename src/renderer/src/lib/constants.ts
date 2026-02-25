@@ -15,7 +15,7 @@ export const GREEN_RGB = '0,153,51';
 export const RED_RGB = '240,58,85';
 
 export const chartType2PeriodTypes: Record<ChartType, PeriodType[]> = {
-  [ChartType.MINUTE]: [PeriodType.MINUTE, PeriodType.HALF_HOUR, PeriodType.HOUR],
+  [ChartType.MINUTE]: [PeriodType.MINUTE],
   [ChartType.FIVE_MINUTE]: [PeriodType.FIVE_MINUTE],
   [ChartType.FIFTEEN_MINUTE]: [PeriodType.FIFTEEN_MINUTE],
   [ChartType.HALF_HOUR]: [PeriodType.HALF_HOUR],
@@ -73,3 +73,5 @@ export const periodType2MaPeriods: Record<PeriodType, number[]> = {
   [PeriodType.WEEK]: [5, 10, 20, 60],
   [PeriodType.MONTH]: [5, 10, 20, 60],
 };
+
+export const NEED_SEGMENTS_PERIOD: PeriodType[] = [PeriodType.MINUTE, PeriodType.FIVE_MINUTE];

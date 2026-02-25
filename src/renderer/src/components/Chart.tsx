@@ -20,16 +20,22 @@ import {
   DARK_GREEN_COLOR,
   DARK_RED_COLOR,
   periodType2MaPeriods,
+  NEED_SEGMENTS_PERIOD,
 } from '@/lib/constants';
 import { themeAtom } from '@/models/global';
 import { fetchKLines } from '@/api/klines';
-import { computePivotWithDp, computeStrokeSimply } from '@shared/lib/chanlun';
+import {
+  computePivotWithDp,
+  computeSegmentsSimply,
+  computeStrokeSimply,
+} from '@shared/lib/chanlun';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarSpace } from '@/types/global';
 import { barSpaceInPeriodAtom } from '@/models/detail';
 import { useLatestRequest } from '@/hooks/use-latest-request';
 
 const STROKE_COLOR = '#888888DD';
+const SEGEMENT_COLOR = '#1875C1A1';
 // const PIVOT_COLOR = '#00a6ff';
 const UP_PIVOT_COLOR = '#ff8000';
 const DOWN_PIVOT_COLOR = '#a6ff00';
@@ -113,15 +119,19 @@ interface ChartProps {
 }
 
 const BAR_SPACE_SIZE: Record<BarSpace, number> = {
+  [BarSpace.EXTRA_SMALL]: 1.25,
   [BarSpace.SMALL]: 2.98,
   [BarSpace.MEDIUM]: 5.76,
   [BarSpace.LARGE]: 8,
+  [BarSpace.EXTRA_LARGE]: 12,
 };
 
 const BAR_SPACE_TITLE: Record<BarSpace, string> = {
-  [BarSpace.SMALL]: '密',
-  [BarSpace.MEDIUM]: '中',
-  [BarSpace.LARGE]: '疏',
+  [BarSpace.EXTRA_SMALL]: 'XS',
+  [BarSpace.SMALL]: 'S',
+  [BarSpace.MEDIUM]: 'M',
+  [BarSpace.LARGE]: 'L',
+  [BarSpace.EXTRA_LARGE]: 'XL',
 };
 
 const LARGET_INDICATOR_HEIGHT = 80;
@@ -162,8 +172,10 @@ export const Chart = memo(
     useEffect(() => {
       (async () => {
         if (list && chart) {
+          const needSegments = NEED_SEGMENTS_PERIOD.includes(period);
           const strokes = computeStrokeSimply(list);
-          const pivots = computePivotWithDp(strokes);
+          const segments = needSegments ? computeSegmentsSimply(strokes) : [];
+          const pivots = computePivotWithDp(needSegments ? segments : strokes);
           // const { strokes, pivots } = await chanlunComputeRequest(list);
           chart.createOverlay([
             ...strokes.map((s) => ({
@@ -179,6 +191,22 @@ export const Chart = memo(
                 line: {
                   size: 1,
                   color: STROKE_COLOR,
+                },
+              },
+            })),
+            ...segments.map((s) => ({
+              visible: unchangableOverlayVisible,
+              name: 'segment',
+              paneId: 'candle_pane',
+              lock: true,
+              points: [
+                { timestamp: s.start.timestamp, value: s.start.price },
+                { timestamp: s.end.timestamp, value: s.end.price },
+              ],
+              styles: {
+                line: {
+                  size: 2,
+                  color: SEGEMENT_COLOR,
                 },
               },
             })),
@@ -322,7 +350,7 @@ export const Chart = memo(
         // chart.createIndicator('KDJ');
         chart.createIndicator({
           name: 'MACD',
-          calcParams: period === PeriodType.DAY ? [5, 34, 5] : undefined,
+          // calcParams: period === PeriodType.DAY ? [5, 34, 5] : undefined,
           styles: {
             height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT,
           },
@@ -374,9 +402,15 @@ export const Chart = memo(
               value={barSpaceInPeriod[period]}
               onValueChange={(value) => onBarSpaceChange(value as BarSpace)}
             >
-              <TabsList className="h-8">
-                {[BarSpace.SMALL, BarSpace.MEDIUM, BarSpace.LARGE].map((c) => (
-                  <TabsTrigger key={c} value={c.toString()}>
+              <TabsList className="h-7">
+                {[
+                  BarSpace.EXTRA_SMALL,
+                  BarSpace.SMALL,
+                  BarSpace.MEDIUM,
+                  BarSpace.LARGE,
+                  BarSpace.EXTRA_LARGE,
+                ].map((c) => (
+                  <TabsTrigger className="h-6" key={c} value={c.toString()}>
                     {BAR_SPACE_TITLE[c]}
                   </TabsTrigger>
                 ))}

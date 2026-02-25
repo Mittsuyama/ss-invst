@@ -3,8 +3,9 @@ import { useMemoizedFn } from 'ahooks';
 import clsx from 'clsx';
 import { request } from '@renderer/lib/request';
 import { RequestType } from '@shared/types/request';
-import { MoreHorizontal, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronUp, MoreHorizontal, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import {
   Table,
   TableBody,
@@ -29,8 +30,8 @@ import { FilterColumn, FilterItem } from '@renderer/types/search';
 
 const COLUMN_ORDER = [
   '^SERIAL',
-  '^SECURITY_CODE',
   '^SECURITY_SHORT_NAME',
+  '^SECURITY_CODE',
   '^INDUSTRY',
   '^KDJ_J',
   '^NEWEST_PRICE',
@@ -45,7 +46,7 @@ const COLUMN_ORDER = [
 
 // const CONDITION =
 //   '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;上市时间>2年;总市值>50亿;行业';
-const CONDITION = '市盈率TTM(扣非);日线周期KDJ(J值)<5;总市值>50亿;行业';
+const CONDITION = '市盈率TTM(扣非);日线周期KDJ(J值)<5;总市值>50亿;上市时间>2年;行业';
 
 export const Filter = memo(() => {
   const [loading, setLoading] = useState(false);
@@ -314,32 +315,41 @@ export const Filter = memo(() => {
       </div>
       <Drawer open={!!current} onClose={() => setCurrent(null)} direction="right">
         <DrawerContent
-          className="flex flex-col ring-0 outline-0"
-          style={{ width: 'calc(100% - 260px)', maxWidth: '100%' }}
+          className="ring-0 outline-0 px-6 pt-5"
+          style={{ width: 'calc(100% - 220px)', maxWidth: '100%' }}
         >
-          <div
-            className={clsx('flex-1 overflow-hidden px-6 pt-5', { 'opacity-25': currentIdLoading })}
+          <ButtonGroup
+            orientation="vertical"
+            className="text-sm absolute -left-12 top-4 bg-background"
           >
-            {currentId ? (
-              <Detail
-                sidebar
-                className="h-full"
-                id={currentId}
-                // headerExtra={
-                //   <ButtonGroup className="text-sm">
-                //     <Button variant="outline" onClick={onPrevious}>
-                //       <ChevronLeft className="" />
-                //       上一个
-                //     </Button>
-                //     <Button variant="outline" onClick={onNext}>
-                //       下一个
-                //       <ChevronRight className="" />
-                //     </Button>
-                //   </ButtonGroup>
-                // }
-              />
-            ) : null}
-          </div>
+            <Button size="icon" variant="outline" onClick={onPrevious}>
+              <ChevronUp />
+            </Button>
+            <Button size="icon" variant="outline" onClick={onNext}>
+              <ChevronDown />
+            </Button>
+          </ButtonGroup>
+          {currentId ? (
+            <Detail
+              sidebar
+              className={clsx('h-full', {
+                'opacity-25': currentIdLoading,
+              })}
+              id={currentId}
+              // headerExtra={
+              //   <ButtonGroup className="text-sm">
+              //     <Button variant="outline" onClick={onPrevious}>
+              //       <ChevronLeft className="" />
+              //       上一个
+              //     </Button>
+              //     <Button variant="outline" onClick={onNext}>
+              //       下一个
+              //       <ChevronRight className="" />
+              //     </Button>
+              //   </ButtonGroup>
+              // }
+            />
+          ) : null}
         </DrawerContent>
       </Drawer>
     </>
