@@ -6,7 +6,6 @@ import {
   PriceAndVolumeItem,
   Segment,
   Stroke,
-  StrokeDpData,
 } from '@shared/types/stock';
 
 const getChanlunK = (origin: PriceAndVolumeItem[]) => {
@@ -315,92 +314,6 @@ export const computeSegmentsSimply = (strokes: Stroke[]) => {
   }
 
   return res;
-};
-
-export const computeStrokesWithDp = (origin: PriceAndVolumeItem[]) => {
-  const items = getChanlunK(origin);
-  const dp: StrokeDpData[] = [];
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].fractal) {
-      dp.push({
-        count: 0,
-        target: i,
-        dif: 0,
-      });
-    }
-  }
-  for (let i = 0; i < dp.length; i++) {
-    // 剪枝：往前枚举 20 个分形应该就够了
-    for (let j = i - 1; j >= Math.max(0, i - 20); j--) {
-      // 只能连接不同类型的分形
-      if (items[dp[j].target].fractal === items[dp[i].target].fractal) {
-        continue;
-      }
-      // 两个分形直接至少包含 5 条 K 线
-      if (dp[i].target - dp[j].target < 5) {
-        continue;
-      }
-      // 底分型只能连接更高的顶分形
-      if (
-        items[dp[i].target].fractal === 'bottom' &&
-        items[dp[i].target].low > items[dp[j].target].high
-      ) {
-        continue;
-      }
-      // 顶分型只能连接更低的底分形
-      if (
-        items[dp[i].target].fractal === 'top' &&
-        items[dp[i].target].high < items[dp[j].target].low
-      ) {
-        continue;
-      }
-      // 按照最多『笔』的连接来划分
-      if (dp[j].count + 1 > dp[i].count) {
-        dp[i].count = dp[j].count + 1;
-        dp[i].prev = j;
-        dp[i].dif = computeDif(items[dp[i].target], items[dp[j].target]);
-      }
-      // 如果笔数一致，则按照最大距离的连接来划分
-      const dif = dp[j].dif + computeDif(items[dp[i].target], items[dp[j].target]);
-      if (dp[j].count + 1 === dp[i].count && dif > dp[i].dif) {
-        dp[i].prev = j;
-        dp[i].dif = dif;
-      }
-    }
-  }
-  const max = {
-    index: 0,
-    value: 0,
-  };
-  for (let i = 0; i < dp.length; i++) {
-    if (dp[i].count > max.value) {
-      max.value = dp[i].count;
-      max.index = i;
-    }
-  }
-  const strokes: Stroke[] = [];
-  let i: number | undefined = max.index;
-  while (i) {
-    const prevDpIndex = dp[i].prev;
-    const prev = prevDpIndex ? dp[prevDpIndex].target : undefined;
-    const curr = dp[i].target;
-    if (curr && prev) {
-      const isUp = items[curr].fractal === 'top';
-      strokes.push({
-        type: isUp ? 'up' : 'down',
-        start: {
-          timestamp: items[prev].timestamp,
-          price: isUp ? items[prev].low : items[prev].high,
-        },
-        end: {
-          timestamp: items[curr].timestamp,
-          price: isUp ? items[curr].high : items[curr].low,
-        },
-      });
-    }
-    i = dp[i].prev;
-  }
-  return strokes;
 };
 
 export const computePivotWithDp = (strokes: Stroke[]) => {

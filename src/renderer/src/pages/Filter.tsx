@@ -51,7 +51,7 @@ const CONDITION = '市盈率TTM(扣非);日线周期KDJ(J值)<5;总市值>50亿;
 export const Filter = memo(() => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
-    pageSize: 50,
+    pageSize: 100,
     page: 1,
   });
   const [total, setTotal] = useState(0);
@@ -318,10 +318,7 @@ export const Filter = memo(() => {
           className="ring-0 outline-0 px-6 pt-5"
           style={{ width: 'calc(100% - 220px)', maxWidth: '100%' }}
         >
-          <ButtonGroup
-            orientation="vertical"
-            className="text-sm absolute -left-12 top-4 bg-background"
-          >
+          <ButtonGroup orientation="vertical" className="text-sm absolute -left-12 top-4">
             <Button size="icon" variant="outline" onClick={onPrevious}>
               <ChevronUp />
             </Button>

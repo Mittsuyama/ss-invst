@@ -63,15 +63,15 @@ export const periodTitle: Record<PeriodType, string> = {
 };
 
 export const periodType2MaPeriods: Record<PeriodType, number[]> = {
-  [PeriodType.MINUTE]: [5, 10, 20, 60],
-  [PeriodType.TEN_MINUTE]: [5, 10, 20, 60],
-  [PeriodType.FIVE_MINUTE]: [5, 10, 20, 60],
-  [PeriodType.FIFTEEN_MINUTE]: [5, 10, 20, 60],
-  [PeriodType.HALF_HOUR]: [5, 10, 20, 60],
-  [PeriodType.HOUR]: [5, 10, 20, 60],
-  [PeriodType.DAY]: [7, 14, 25, 60, 235],
-  [PeriodType.WEEK]: [5, 10, 20, 60],
-  [PeriodType.MONTH]: [5, 10, 20, 60],
+  [PeriodType.MINUTE]: [30, 60, 120],
+  [PeriodType.TEN_MINUTE]: [30, 60, 120],
+  [PeriodType.FIVE_MINUTE]: [30, 60, 120],
+  [PeriodType.FIFTEEN_MINUTE]: [30, 60, 120],
+  [PeriodType.HALF_HOUR]: [30, 60, 120],
+  [PeriodType.HOUR]: [30, 60, 120],
+  [PeriodType.DAY]: [30, 60, 120],
+  [PeriodType.WEEK]: [30, 60, 120],
+  [PeriodType.MONTH]: [30, 60, 120],
 };
 
 export const NEED_SEGMENTS_PERIOD: PeriodType[] = [PeriodType.MINUTE, PeriodType.FIVE_MINUTE];

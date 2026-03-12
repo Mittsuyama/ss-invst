@@ -350,7 +350,6 @@ export const Chart = memo(
         // chart.createIndicator('KDJ');
         chart.createIndicator({
           name: 'MACD',
-          // calcParams: period === PeriodType.DAY ? [5, 34, 5] : undefined,
           styles: {
             height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT,
           },
