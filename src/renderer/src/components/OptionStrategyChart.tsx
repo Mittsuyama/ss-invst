@@ -12,10 +12,11 @@ interface Point {
 
 interface OptionStrategyChartProps {
   selectedOption: O[];
+  targetCount: number;
 }
 
 export const OptionStrategyChart = memo((props: OptionStrategyChartProps) => {
-  const { selectedOption } = props;
+  const { selectedOption, targetCount } = props;
 
   const [optionValues, setOptionValues] = useState<Array<Point>>([]);
   const [zeroPoint, setZeroPoint] = useState<Array<number>>([]);
@@ -51,7 +52,7 @@ export const OptionStrategyChart = memo((props: OptionStrategyChartProps) => {
       }, 0);
       values.push({
         price: p,
-        profit,
+        profit: profit + (p - currentPrice) * targetCount,
       });
     }
 
@@ -78,7 +79,7 @@ export const OptionStrategyChart = memo((props: OptionStrategyChartProps) => {
     setRange({ min, max });
     setZeroPoint(zeros);
     setOptionValues(values);
-  }, [selectedOption]);
+  }, [selectedOption, targetCount]);
 
   const markPoint = useMemo(() => {
     const res: IMarkPointSpec[] = [];
@@ -151,136 +152,146 @@ export const OptionStrategyChart = memo((props: OptionStrategyChartProps) => {
   }
 
   return (
-    <AreaChart
-      spec={{
-        height: 400,
-        type: 'area',
-        data: {
-          values: optionValues,
-        },
-        padding: {
-          top: 30,
-        },
-        line: {
-          style: {
-            stroke: (data) => {
-              if (data.profit > 0) {
-                return '#ee7e8b';
-              }
-              return '#8bedbc';
-            },
+    <div>
+      <div className="flex gap-3">
+        <div className="text-muted-foreground">盈亏平衡点</div>
+        <div className="mr-3 font-bold">{zeroPoint.join(',')}</div>
+        <div className="text-muted-foreground">最大值</div>
+        <div className="mr-3 font-bold">{range?.max.profit}</div>
+        <div className="text-muted-foreground">最小值</div>
+        <div className="mr-3 font-bold">{range?.min.profit}</div>
+      </div>
+      <AreaChart
+        spec={{
+          height: 400,
+          type: 'area',
+          data: {
+            values: optionValues,
           },
-        },
-        area: {
-          style: {
-            fill: (data) => {
-              if (data.profit > 0) {
-                return '#ee7e8b22';
-              }
-              return '#8bedbc22';
-            },
+          padding: {
+            top: 30,
           },
-        },
-        markPoint,
-        markLine: [
-          {
-            x: selectedOption[0].underlyingPrice * 10,
-            label: {
-              text: `标的现价 ${selectedOption[0].underlyingPrice * 10}`,
-              style: {
-                fill: 'white',
+          line: {
+            style: {
+              stroke: (data) => {
+                if (data.profit > 0) {
+                  return '#ee7e8b';
+                }
+                return '#8bedbc';
               },
-              refY: 0,
-              refX: 10,
-              labelBackground: {
-                padding: 5,
+            },
+          },
+          area: {
+            style: {
+              fill: (data) => {
+                if (data.profit > 0) {
+                  return '#ee7e8b22';
+                }
+                return '#8bedbc22';
+              },
+            },
+          },
+          markPoint,
+          markLine: [
+            {
+              x: selectedOption[0].underlyingPrice * 10,
+              label: {
+                text: `标的现价 ${selectedOption[0].underlyingPrice * 10}`,
                 style: {
-                  fill: '#333',
+                  fill: 'white',
+                },
+                refY: 0,
+                refX: 10,
+                labelBackground: {
+                  padding: 5,
+                  style: {
+                    fill: '#333',
+                  },
+                },
+              },
+              line: {
+                style: {
+                  lineWidth: 1,
+                  stroke: '#333',
+                  lineDash: [4, 4],
+                },
+              },
+              endSymbol: {
+                visible: false,
+              },
+            },
+            {
+              y: 0,
+              label: {
+                visible: false,
+              },
+              line: {
+                style: {
+                  lineWidth: 2,
+                  stroke: '#333',
+                  lineDash: [0, 0],
+                },
+              },
+              endSymbol: {
+                visible: false,
+              },
+            },
+          ],
+          crosshair: {
+            xField: {
+              visible: true,
+              line: {
+                type: 'line',
+                style: {
+                  lineWidth: 1,
+                  stroke: '#555',
+                  lineDash: [3, 3],
+                },
+              },
+              label: {
+                visible: true,
+              },
+            },
+            yField: {
+              visible: true,
+              line: {
+                type: 'line',
+                style: {
+                  lineWidth: 1,
+                  stroke: '#555',
+                  lineDash: [3, 3],
+                },
+              },
+              label: {
+                visible: true,
+              },
+            },
+          },
+          axes: [
+            {
+              orient: 'bottom',
+              tick: {
+                tickCount: 10,
+              },
+            },
+            {
+              orient: 'left',
+              grid: {
+                visible: true,
+                style: {
+                  stroke: '#aaaaaa33',
                 },
               },
             },
-            line: {
-              style: {
-                lineWidth: 1,
-                stroke: '#333',
-                lineDash: [4, 4],
-              },
-            },
-            endSymbol: {
-              visible: false,
-            },
+          ],
+          point: {
+            visible: false,
           },
-          {
-            y: 0,
-            label: {
-              visible: false,
-            },
-            line: {
-              style: {
-                lineWidth: 2,
-                stroke: '#333',
-                lineDash: [0, 0],
-              },
-            },
-            endSymbol: {
-              visible: false,
-            },
-          },
-        ],
-        crosshair: {
-          xField: {
-            visible: true,
-            line: {
-              type: 'line',
-              style: {
-                lineWidth: 1,
-                stroke: '#555',
-                lineDash: [3, 3],
-              },
-            },
-            label: {
-              visible: true,
-            },
-          },
-          yField: {
-            visible: true,
-            line: {
-              type: 'line',
-              style: {
-                lineWidth: 1,
-                stroke: '#555',
-                lineDash: [3, 3],
-              },
-            },
-            label: {
-              visible: true,
-            },
-          },
-        },
-        axes: [
-          {
-            orient: 'bottom',
-            tick: {
-              tickCount: 10,
-            },
-          },
-          {
-            orient: 'left',
-            grid: {
-              visible: true,
-              style: {
-                stroke: '#aaaaaa33',
-              },
-            },
-          },
-        ],
-        point: {
-          visible: false,
-        },
-        xField: 'price',
-        yField: 'profit',
-      }}
-    />
+          xField: 'price',
+          yField: 'profit',
+        }}
+      />
+    </div>
   );
 });
 

@@ -79,6 +79,7 @@ export const Option = memo(() => {
   const [expire, setExpire] = useAtom(expireAtom);
   const [callList, setCallList] = useState<Array<OptionItem>>([]);
   const [putList, setPutList] = useState<Array<OptionItem>>([]);
+  const [targetCount, setTargetCount] = useState(0);
   const [selectedOption, setSelectedOption] = useState<Array<O>>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -289,13 +290,60 @@ export const Option = memo(() => {
               </Button>
             </DrawerTrigger>
             <DrawerContent style={{ maxWidth: '60%' }}>
-              <DrawerHeader>
-                <DrawerTitle>策略组合分析</DrawerTitle>
-                <DrawerDescription className="mb-2">可调整期权配置重新绘制</DrawerDescription>
-              </DrawerHeader>
+              <div className="flex justify-between pr-4 items-center">
+                <DrawerHeader>
+                  <DrawerTitle>策略组合分析</DrawerTitle>
+                  <DrawerDescription className="mb-2">可调整期权配置重新绘制</DrawerDescription>
+                </DrawerHeader>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTargetCount((pre) => (pre ? 0 : 1))}
+                >
+                  {targetCount ? '移除正股' : '增加正股'}
+                </Button>
+              </div>
               <div className="px-4">
                 <div className="mb-4 font-bold">配置调整</div>
                 <div className="my-2 px-2">
+                  {!!targetCount && selectedOption.length && (
+                    <div className="flex items-center gap-4 my-3">
+                      <div className={clsx('text-white rounded-md px-2 py-1 bg-zinc-900')}>
+                        正股
+                      </div>
+                      <div className="text-muted-foreground">
+                        {selectedOption[0].underlyingName}
+                      </div>
+                      <div className="text-muted-foreground">{selectedOption[0].expire}</div>
+                      <div className="font-bold ml-auto">
+                        ￥{selectedOption[0].underlyingPrice * 10}
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <Button
+                          onClick={() => setTargetCount((pre) => pre - 1)}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Minus size={15} />
+                        </Button>
+                        <Input readOnly className="w-28" value={targetCount} />
+                        <Button
+                          onClick={() => setTargetCount((pre) => pre + 1)}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Plus size={15} />
+                        </Button>
+                      </div>
+                      <Button
+                        onClick={() => setTargetCount(0)}
+                        variant="outline"
+                        className="text-red-600 hover:text-red-600"
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  )}
                   {selectedOption?.map((o) => (
                     <div key={o.code} className="flex items-center gap-4 my-3">
                       <div
@@ -349,7 +397,7 @@ export const Option = memo(() => {
                         >
                           <Minus size={15} />
                         </Button>
-                        <Input className="w-28" value={o.count} />
+                        <Input readOnly className="w-28" value={o.count} />
                         <Button
                           onClick={() => onOptionCountChange(o, 1)}
                           size="icon"
@@ -369,7 +417,7 @@ export const Option = memo(() => {
                   ))}
                 </div>
                 <div className="my-8 font-bold">损益图例</div>
-                <OptionStrategyChart selectedOption={selectedOption} />
+                <OptionStrategyChart targetCount={targetCount} selectedOption={selectedOption} />
               </div>
             </DrawerContent>
           </Drawer>
