@@ -1,25 +1,27 @@
-import axios, { AxiosRequestConfig } from 'axios';
+import axios from 'axios';
 
-const config: AxiosRequestConfig = {
-  headers: {
-    Referer: 'https://www.eastmoney.com',
-    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Cache-Control': 'no-cache',
-    Pragma: 'no-cache',
-    Connection: 'keep-alive',
-    'User-Agent':
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
-    Cookie:
-      'qgqp_b_id=49772fe3016d8bb801d15a6a329ab7ac; st_nvi=Kt8X-o43AQd7TGLqpMVamdb93; nid18=09eb187f79dc909ec16bdbde4b035e7c; nid18_create_time=1764746733976; gviem=d6qwNlAoqPLuUqt0TIAu3f8cd; gviem_create_time=1764746733976; st_si=67180891942610; fullscreengg=1; fullscreengg2=1; st_asi=delete; p_origin=https%3A%2F%2Fpassport2.eastmoney.com; mtp=1; ct=C0N5AB9eEK1PwzC2fwal48Rkt3dJpe0dYo1Xh1PwLcHtVT49K2WBj-HPOV41wnUW1LbMBWCvwKqFJgwnTrOhOfx2_ETUNHyYbtmwCoTVfgDDKZfoGI-7bIWbWuZG6NMpyFm4ae7dtCzB5SnNW2r70yCK5_bYv2upy7KMMZ6f4fg; ut=FobyicMgeV6Y64GRZW6ip2zKkhvixKbtimXPFJLqCbvsz8q0UTCMGa4gmLuqywy7JXUHweeP5icc85Ju3Std3qA98m2isCY571eJqNTOKvW04q0KK1i8w4m0TtDkRbHxiXjW0Ec87zWCP_oRJOyBlId7G1uqlfBhNnnsLKtBBHdHdxCgrAuXMpiPD5WMtDcIgYL4KJf5l4lB6qMQqVQUR_x7lgSUDm9e8_cvABw12mcY4ci0daDYoOGoSs_ZASpK8iuxghXxS0zSFpefiRXzyoieAWiivbmruhDIC6cNZ1SKImExxn9Co33TsanTP0qice8tVA2iN2WxVcpq3K9wtY1qkH_SdbkQsI7-eucNntInm7WyZ7ZN6f1MX7zPmsXok4TVCbgD3Y25i1eXWncAGr2oU-Kiuvbj4KB-pVoUPC4oynCQ_8nLphn9RxmBDh9DgGhqepQfaIecbkllGoJBhKaNBgiPkxGI56K6_CAxwSIehZ7TfBJ3UpvPl0QT6NUWYBVjoU90HVA; pi=4205366139643414%3Be4205366139643414%3BMitsuyama%3BALHBQAYXXyHDT%2FfetjvKNgY%2Bku1YCWlxlN3pOAk8cQBeer%2BtCsUwicH1Q0UMd2okC7EgiXKyT6EcAl%2F6dGRaPzy6aRqXTu%2FTZVGyD1kyIC8eieHAkWi8JpfzHvUBPAmF1SWdtdRnes7WrFCHVsQeAUyOIab1NglCekJCLq0z7uXmIhqb%2FLcGSxI61fUZRRqhjIHyY8np%3BtINTIh18mq7cvLxP%2FgFySybCQOeUfAvF0igEhluUkRVLwbso%2BpgNTtHUj%2BbyfxuzeDlGJ6cCOmUj1RUiK2taMt1NrrFaLkhK1QVjUmJaLokpu1s0SMHb0b8WcliOSCEb3VsnHZkA6IsFbcvnRU%2B5jTDD3I%2FtOQ%3D%3D; uidal=4205366139643414Mitsuyama; sid=160852035; vtpst=|; st_psi=20260115152211285-119144370567-7563790668; st_pvi=33332684843632; st_sp=2024-12-21%2017%3A48%3A02; st_inirUrl=https%3A%2F%2Fwww.eastmoney.com%2F; st_sn=39',
-    // Cookie: `mtp=1; qgqp_b_id=f95cc8cd33dbefa5237c65ac21b3c1b3; st_nvi=iZENfSgV3FFHOoEP2DlHH9f59; st_si=12755062424613; fullscreengg=1; fullscreengg2=1; nid18=0f2ef6fad8c490d36e02a712f89156e1; nid18_create_time=${timestamp}; gviem=NNCh0qSjVjDvHkQl73QJCa92f; gviem_create_time=${timestamp}; st_asi=delete; st_pvi=88490171619700; st_sp=2022-11-06%2022%3A08%3A03; st_inirUrl=https%3A%2F%2Fwww.google.com.hk%2F; st_sn=13; st_psi=20251207031849618-111000300841-7440099793`,
-  },
+const defaultHeaders = {
+  Referer: 'https://xuangu.eastmoney.com/',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+  'Cache-Control': 'no-cache',
+  Pragma: 'no-cache',
+  Connection: 'keep-alive',
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+  Cookie:
+    'qgqp_b_id=f95cc8cd33dbefa5237c65ac21b3c1b3; st_nvi=iZENfSgV3FFHOoEP2DlHH9f59; nid18=097053379b7193e6f91152f5db0067b0; nid18_create_time=1773327805475; gviem=EKXP1XbtVGAz5V-RU4gdn1e91; gviem_create_time=1773327805475; st_si=41201237578155; p_origin=https%3A%2F%2Fpassport2.eastmoney.com; mtp=1; ct=NMYXEySHMUscZg0nC57m4q6-bScMNc3svzLyfodH04kfzc_wk2BDB8f2ZkzmkPIP3FgQWvmok0t200DDe8MB3jkI-qmaQ4SJ4poGGPpdJhFzt4BdHL7yDpl8QznWaB-I_nWbndFpp0Xsz38Ms69_2MMRx9s8wL3uTIfRDG_F4No; ut=FobyicMgeV7cZJLM9GavAcciQryh29lRlEa3J6556LAZfegvIEnNn9THhQkL4qyQek5lDNEj_aDA1mbuIYa0CDwMqO5TPJs9BHBe-j1lJqYRrifKVVzcYGVP_rLdTXVeixED8Tgc_eTA8x4DfuED04K2LYHdH0tXNBi8KOLE577R7ekYzn6njl-F7sw-z6LEuDyJytpRzAz19SDDckIl8Hb7z5ry5MB-27MRwzgQ6beMsnEp_fPenyaqJ4DMFl9JPm_WDHsQ65rVcUU8w2B1-LluMdcwfFpfntleJNhp7Mzbrau8U7V37s3vIBaG5TcgmoFN8jFDctoAWinqsiCtf1KxzKRDK7QxFz5GT6C2n7J6OWqsNAqR67Z3IszB0kZJAiM3mdKq71r7FT8o-CS5fVnSzzQsZFB3yL3OdNN0QVFTDRnycaYbWRR39a2o4O4mmZRYuQmpARSV_Yn6bmIlU35EuYQMzDDyHcRMd4jvPAIHvAjBIeprc0kNIR5H2xcGh-HYEkUCRqZ-k-ooDVhzCcUjHS68rBVmKZ9l-9ZrcXhjhRismp3_bw; pi=4205366139643414%3Be4205366139643414%3BMitsuyama%3BxBowFEfARqg9lV7mtPUJEpSX5K5125fAR%2BUdn381CTvtbn%2Fhblrk1ujMkY48Aya1Ji2fxfc%2Bri44uDrpEy7mB3eNyk8sQE0RQI%2BzQOMK4WW4d0hJn0EwJqTEq%2BEmU266W5K63tScmTRmPuBAqENtQTrV8f1dlOrdwSLHTRluvYZul77CV7%2FJUCu%2BSgh73UaMNzEsDIhf%3BKMMwHAcPLSAosE0X%2BBNJuRxrnTaHIpTU9xB3JceUqWopXGuzUZns82ylCt0dXbx%2FEtYhTarClKuGSc%2Byz90Y12BpBwa1cQrDH5S4AyxGH%2FNd5w5bPAA2XKNAYaLlYOrJI3Ws4XYGZdBU5%2Fv9nf8LZkXDAaboAg%3D%3D; uidal=4205366139643414Mitsuyama; sid=160852035; vtpst=|; fullscreengg=1; fullscreengg2=1; rskey=y1OJcOXM5U3B1OGNKY3NwNDZ5ZUVnNEVzZz09IXCFS; st_asi=delete; st_psi=20260412173948501-119144370567-7742879183; st_pvi=88490171619700; st_sp=2022-11-06%2022%3A08%3A03; st_inirUrl=https%3A%2F%2Fwww.google.com.hk%2F; st_sn=10',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const axiosGet = async (url: string, params: any) => {
+export const axiosGet = async (url: string, params: any, headers: any = {}) => {
   // const timestamp = Date.now();
   try {
-    const res = await axios.get(`${url}?${new URLSearchParams(params).toString()}`, config);
+    const res = await axios.get(`${url}?${new URLSearchParams(params).toString()}`, {
+      headers: {
+        ...defaultHeaders,
+        ...headers,
+      },
+    });
     return {
       code: 0,
       data: res.data,
@@ -33,9 +35,14 @@ export const axiosGet = async (url: string, params: any) => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const axiosPost = async (url: string, params: any) => {
+export const axiosPost = async (url: string, params: any, headers: any = {}) => {
   try {
-    const res = await axios.post(url, params, config);
+    const res = await axios.post(url, params, {
+      headers: {
+        ...defaultHeaders,
+        ...headers,
+      },
+    });
     return {
       code: 0,
       data: res.data,

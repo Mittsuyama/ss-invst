@@ -21,7 +21,6 @@ import { Toaster } from '@/components/ui/sonner';
 import '@/assets/main.css';
 import { useAtomValue } from 'jotai';
 import { detailFullScreenAtom } from './models/detail';
-import { Fullscreen } from 'lucide';
 
 const ROUTES: Array<{
   key: string;

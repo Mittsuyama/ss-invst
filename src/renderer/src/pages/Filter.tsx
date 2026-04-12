@@ -120,6 +120,9 @@ export const Filter = memo(() => {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey) {
+        return;
+      }
       if (e.key === 'ArrowUp') {
         onPrevious();
       } else if (e.key === 'ArrowDown') {

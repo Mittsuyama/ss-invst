@@ -67,10 +67,10 @@ export const Detail = memo((props: DetailProps) => {
               {info ? (
                 <>
                   <div className="title">{info.name}</div>
-                  {info.bizName ? <div className="sub-title">{info.bizName}</div> : null}
+                  {/* {info.bizName ? <div className="sub-title">{info.bizName}</div> : null} */}
                   {typeof info.cap === 'number' ? (
                     <div className="space gap-2">
-                      <div className="sub-title">市值:</div>
+                      {/* <div className="sub-title">市值:</div> */}
                       <div className="title">{(info.cap / 1_0000_0000).toFixed(0)}亿</div>
                     </div>
                   ) : null}
@@ -107,10 +107,10 @@ export const Detail = memo((props: DetailProps) => {
                 ChartType.WEEK_AND_DAY,
                 ChartType.DAY_AND_HALF_HOUR,
                 ChartType.DAY_AND_FIFTEEN_MINUTE,
-                ChartType.DAY_AND_FIVE_MINUTE,
+                // ChartType.DAY_AND_FIVE_MINUTE,
                 // ChartType.FIFTEEN_AND_FIVE_MINUTE,
+                ChartType.DAY,
                 ChartType.FIVE_MINUTE,
-                // ChartType.DAY,
                 // ChartType.WEEK,
                 // ChartType.MONTH,
               ].map((c) => (

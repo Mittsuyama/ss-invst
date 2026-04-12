@@ -84,6 +84,7 @@ const getChanlunK = (origin: PriceAndVolumeItem[]) => {
   return items;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const computeDif = (a: ChanlunK, b: ChanlunK) => {
   if (a.fractal === 'top') {
     return a.high - b.low;

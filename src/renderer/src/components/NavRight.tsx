@@ -58,6 +58,9 @@ export const NavRight = memo((props: NavRightProps) => {
   };
 
   const onKeyDown = useMemoizedFn((e: KeyboardEvent) => {
+    if (e.metaKey && e.shiftKey) {
+      return;
+    }
     if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
       setSearchOpen(true);
       return;

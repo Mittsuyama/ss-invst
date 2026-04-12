@@ -6,8 +6,9 @@ export async function request(
   type: RequestType.GET | RequestType.POST,
   url: string,
   params?: Record<string, unknown>,
+  headers?: Record<string, unknown>,
 ) {
-  const res = await window.electron.ipcRenderer.invoke(type, url, params);
+  const res = await window.electron.ipcRenderer.invoke(type, url, params, headers);
   if (res.code === 0) {
     return res.data;
   }
@@ -30,6 +31,5 @@ export async function listGetRequest(
 
 export async function chanlunComputeRequest(list: PriceAndVolumeItem[]) {
   const res = await window.electron.ipcRenderer.invoke(RequestType.CHANLUN_COMPUTE, list);
-  console.log(res);
   return res as { strokes: Stroke[]; pivots: Pivot[] };
 }

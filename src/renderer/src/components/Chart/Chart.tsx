@@ -7,8 +7,6 @@ import {
   dispose,
   CandleType,
   ActionType,
-  registerOverlay,
-  registerFigure,
   Chart as ChartObject,
   TooltipShowRule,
 } from 'klinecharts';
@@ -17,9 +15,9 @@ import {
   PRICE_COLOR,
   GREEN_COLOR,
   RED_COLOR,
-  DARK_GREEN_COLOR,
-  DARK_RED_COLOR,
-  periodType2MaPeriods,
+  // DARK_GREEN_COLOR,
+  // DARK_RED_COLOR,
+  // periodType2MaPeriods,
   NEED_SEGMENTS_PERIOD,
 } from '@/lib/constants';
 import { themeAtom } from '@/models/global';
@@ -33,76 +31,16 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarSpace } from '@/types/global';
 import { barSpaceInPeriodAtom } from '@/models/detail';
 import { useLatestRequest } from '@/hooks/use-latest-request';
-
-const STROKE_COLOR = '#888888DD';
-const SEGEMENT_COLOR = '#1875C1A1';
-// const PIVOT_COLOR = '#00a6ff';
-const UP_PIVOT_COLOR = '#ff8000';
-const DOWN_PIVOT_COLOR = '#a6ff00';
-
-const MA_COLORS = ['#888', '#00d9ffaa', '#000dff87', '#a600ff87', '#ff00a287'];
-const KDJ_COLORS = ['#868686c5', '#ffb700', '#f700ffa8'];
-
-interface PivotAttrs {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}
-
-interface PivotStyles {
-  color: string;
-  extended?: boolean;
-}
-
-registerFigure<PivotAttrs, PivotStyles>({
-  name: 'pivot',
-  draw: (ctx, attrs, styles) => {
-    const { x1, y1, x2, y2 } = attrs;
-    const { color, extended } = styles;
-    ctx.beginPath();
-    ctx.strokeStyle = `${color}ee`;
-    ctx.lineWidth = 1.5;
-    ctx.fillStyle = `${color}33`;
-    if (extended) {
-      ctx.setLineDash([10, 10]);
-      ctx.strokeStyle = `${color}aa`;
-      ctx.fillStyle = `${color}11`;
-    }
-    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-    ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
-  },
-  checkEventOn: ({ x, y }, attrs, styles) => {
-    if (styles.extended) {
-      return false;
-    }
-    const { x1, y1, x2, y2 } = attrs;
-    const xRange = [x1, x2].sort((a, b) => a - b);
-    const yRange = [y1, y2].sort((a, b) => a - b);
-    return x >= xRange[0] && x <= xRange[1] && y >= yRange[0] && y <= yRange[1];
-  },
-});
-
-registerOverlay({
-  name: 'pivot',
-  totalStep: 3,
-  lock: true,
-  needDefaultPointFigure: true,
-  needDefaultXAxisFigure: true,
-  needDefaultYAxisFigure: true,
-  createPointFigures: ({ coordinates, overlay }) => {
-    return {
-      type: 'pivot',
-      attrs: {
-        x1: coordinates[0].x,
-        y1: coordinates[0].y,
-        x2: coordinates[1].x,
-        y2: coordinates[1].y,
-      },
-      styles: overlay.styles,
-    };
-  },
-});
+import {
+  STROKE_COLOR,
+  SEGEMENT_COLOR,
+  UP_PIVOT_COLOR,
+  DOWN_PIVOT_COLOR,
+  // MA_COLORS,
+  KDJ_COLORS,
+  BAR_SPACE_SIZE,
+  BAR_SPACE_TITLE,
+} from './helper';
 
 interface ChartProps {
   id: string;
@@ -118,25 +56,8 @@ interface ChartProps {
   mini?: boolean;
 }
 
-const BAR_SPACE_SIZE: Record<BarSpace, number> = {
-  [BarSpace.EXTRA_SMALL]: 1.25,
-  [BarSpace.SMALL]: 2.98,
-  [BarSpace.MEDIUM]: 5.76,
-  [BarSpace.LARGE]: 8,
-  [BarSpace.EXTRA_LARGE]: 12,
-};
-
-const BAR_SPACE_TITLE: Record<BarSpace, string> = {
-  [BarSpace.EXTRA_SMALL]: 'XS',
-  [BarSpace.SMALL]: 'S',
-  [BarSpace.MEDIUM]: 'M',
-  [BarSpace.LARGE]: 'L',
-  [BarSpace.EXTRA_LARGE]: 'XL',
-};
-
 const LARGET_INDICATOR_HEIGHT = 80;
 const MINI_INDICATOR_HEIGHT = 48;
-
 const CHART_ID_PREFIX = 'detail-klines';
 export const Chart = memo(
   ({
@@ -226,14 +147,18 @@ export const Chart = memo(
           ]);
         }
       })();
-    }, [list, chart, unchangableOverlayVisible]);
+    }, [list, chart, unchangableOverlayVisible, period]);
 
     useEffect(() => {
       if (!chart) {
         return;
       }
+      // chart.overrideIndicator({
+      //   name: 'MA',
+      //   visible: !overlayVisible,
+      // });
       chart.overrideIndicator({
-        name: 'MA',
+        name: 'ZX-TREND',
         visible: !overlayVisible,
       });
       const overlays = chart.getOverlays();
@@ -262,8 +187,10 @@ export const Chart = memo(
           indicator: {
             bars: [
               {
-                downColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
-                upColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
+                downColor: GREEN_COLOR,
+                upColor: RED_COLOR,
+                // downColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
+                // upColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
               },
             ],
             tooltip: {
@@ -290,12 +217,18 @@ export const Chart = memo(
           candle: {
             type: CandleType.CandleUpStroke,
             bar: {
-              upColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
-              upBorderColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
-              upWickColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
-              downColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
-              downBorderColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
-              downWickColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
+              upColor: RED_COLOR,
+              upBorderColor: RED_COLOR,
+              upWickColor: RED_COLOR,
+              downColor: GREEN_COLOR,
+              downBorderColor: GREEN_COLOR,
+              downWickColor: GREEN_COLOR,
+              // upColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
+              // upBorderColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
+              // upWickColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
+              // downColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
+              // downBorderColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
+              // downWickColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
             },
             priceMark: {
               last: {
@@ -316,17 +249,39 @@ export const Chart = memo(
             },
           },
         });
+        // chart.createIndicator(
+        //   {
+        //     visible: !unchangableOverlayVisible,
+        //     name: 'MA',
+        //     shouldOhlc: false,
+        //     calcParams: periodType2MaPeriods[period],
+        //     styles: {
+        //       lines: MA_COLORS.map((color) => ({
+        //         color,
+        //         size: 1,
+        //       })),
+        //     },
+        //   },
+        //   true,
+        //   { id: 'candle_pane', height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
+        // );
         chart.createIndicator(
           {
             visible: !unchangableOverlayVisible,
-            name: 'MA',
+            name: 'ZX-TREND',
             shouldOhlc: false,
-            calcParams: periodType2MaPeriods[period],
+            // calcParams: periodType2MaPeriods[period],
             styles: {
-              lines: MA_COLORS.map((color) => ({
-                color,
-                size: 1,
-              })),
+              lines: [
+                {
+                  color: theme === 'dark' ? 'white' : '#a0a0a0',
+                  size: 1,
+                },
+                {
+                  color: theme === 'dark' ? 'yellow' : '#ffe600',
+                  size: 1,
+                },
+              ],
             },
           },
           true,

@@ -2,14 +2,11 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
-import { toast } from 'sonner';
 import { useHistory, useParams } from 'react-router-dom';
 import { RotateCcw, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import { useAtom, useAtomValue } from 'jotai';
 import { AreaChart } from '@visactor/react-vchart';
-import { RequestType } from '@shared/types/request';
 import { useLatestRequest } from '@/hooks/use-latest-request';
-import { request } from '@/lib/request';
 import { GREEN_RGB, RED_RGB, GREEN_COLOR, RED_COLOR } from '@/lib/constants';
 import { FilterItem, HistoryOption } from '@renderer/types/search';
 import { PriceAndVolumeItem } from '@shared/types/stock';
@@ -275,11 +272,12 @@ export const QuickNav = memo(() => {
   }, [data, direction, sort]);
 
   const onKeyDown = useMemoizedFn((e: KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey) {
+      return;
+    }
     const index = options.findIndex((item) => item.id === idFromParams);
 
     if (options.length < 1) {
-      e.preventDefault();
-      e.stopPropagation();
       return;
     }
 

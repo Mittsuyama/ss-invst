@@ -151,6 +151,9 @@ export const SearchPannel = memo((props: SearchPannelProps) => {
   );
 
   const onKeyDown = useMemoizedFn((e: KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey) {
+      return;
+    }
     if (!open) {
       return;
     }

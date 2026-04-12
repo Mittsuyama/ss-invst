@@ -5,12 +5,12 @@ import { computePivotWithDp, computeStrokeSimply } from '@shared/lib/chanlun';
 import { axiosGet, axiosPost } from './axios';
 
 export const createApiIpc = () => {
-  ipcMain.handle(RequestType.GET, async (_, url: string, params: unknown) => {
-    return await axiosGet(url, params);
+  ipcMain.handle(RequestType.GET, async (_, url: string, params: unknown, headers: unknown) => {
+    return await axiosGet(url, params, headers);
   });
 
-  ipcMain.handle(RequestType.POST, async (_, url: string, params: unknown) => {
-    return await axiosPost(url, params);
+  ipcMain.handle(RequestType.POST, async (_, url: string, params: unknown, headers: unknown) => {
+    return await axiosPost(url, params, headers);
   });
 
   ipcMain.handle(RequestType.LIST_GET, async (_, list: Array<{ url: string; params: unknown }>) => {
