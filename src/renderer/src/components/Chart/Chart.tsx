@@ -19,6 +19,7 @@ import {
   // DARK_RED_COLOR,
   // periodType2MaPeriods,
   NEED_SEGMENTS_PERIOD,
+  periodType2MaPeriods,
 } from '@/lib/constants';
 import { themeAtom } from '@/models/global';
 import { fetchKLines } from '@/api/klines';
@@ -36,8 +37,10 @@ import {
   SEGEMENT_COLOR,
   UP_PIVOT_COLOR,
   DOWN_PIVOT_COLOR,
-  // MA_COLORS,
+  MA_COLORS,
+  DARK_MA_COLORS,
   KDJ_COLORS,
+  DARK_KDJ_COLORS,
   BAR_SPACE_SIZE,
   BAR_SPACE_TITLE,
 } from './helper';
@@ -54,6 +57,8 @@ interface ChartProps {
   hideResetScale?: boolean;
   /** 迷你图 */
   mini?: boolean;
+  /** 多图并存 */
+  multi?: boolean;
 }
 
 const LARGET_INDICATOR_HEIGHT = 80;
@@ -69,6 +74,7 @@ export const Chart = memo(
     hideVol,
     hideResetScale,
     mini,
+    multi,
   }: ChartProps) => {
     const theme = useAtomValue(themeAtom);
     const [barSpaceInPeriod, setBarSpaceInPeriod] = useAtom(barSpaceInPeriodAtom);
@@ -153,14 +159,17 @@ export const Chart = memo(
       if (!chart) {
         return;
       }
-      // chart.overrideIndicator({
-      //   name: 'MA',
-      //   visible: !overlayVisible,
-      // });
-      chart.overrideIndicator({
-        name: 'ZX-TREND',
-        visible: !overlayVisible,
-      });
+      if (period === PeriodType.DAY) {
+        chart.overrideIndicator({
+          name: 'ZX-TREND',
+          visible: !overlayVisible,
+        });
+      } else {
+        chart.overrideIndicator({
+          name: 'MA',
+          visible: !overlayVisible,
+        });
+      }
       const overlays = chart.getOverlays();
       overlays.forEach((overlay) => {
         if (overlay.visible !== overlayVisible) {
@@ -170,7 +179,7 @@ export const Chart = memo(
           });
         }
       });
-    }, [chart, overlayVisible]);
+    }, [chart, overlayVisible, period]);
 
     useEffect(() => {
       if (!list) {
@@ -179,7 +188,6 @@ export const Chart = memo(
       const chart = init(`${CHART_ID_PREFIX}-${id}-${period}`);
       if (chart) {
         chart.applyNewData(list);
-        chart.setOffsetRightDistance(8);
         chart.setStyles({
           grid: {
             show: false,
@@ -249,51 +257,54 @@ export const Chart = memo(
             },
           },
         });
-        // chart.createIndicator(
-        //   {
-        //     visible: !unchangableOverlayVisible,
-        //     name: 'MA',
-        //     shouldOhlc: false,
-        //     calcParams: periodType2MaPeriods[period],
-        //     styles: {
-        //       lines: MA_COLORS.map((color) => ({
-        //         color,
-        //         size: 1,
-        //       })),
-        //     },
-        //   },
-        //   true,
-        //   { id: 'candle_pane', height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
-        // );
-        chart.createIndicator(
-          {
-            visible: !unchangableOverlayVisible,
-            name: 'ZX-TREND',
-            shouldOhlc: false,
-            // calcParams: periodType2MaPeriods[period],
-            styles: {
-              lines: [
-                {
-                  color: theme === 'dark' ? 'white' : '#a0a0a0',
-                  size: 1,
-                },
-                {
-                  color: theme === 'dark' ? 'yellow' : '#ffe600',
-                  size: 1,
-                },
-              ],
+        if (period === PeriodType.DAY) {
+          chart.createIndicator(
+            {
+              visible: !unchangableOverlayVisible,
+              name: 'ZX-TREND',
+              shouldOhlc: false,
+              // calcParams: periodType2MaPeriods[period],
+              styles: {
+                lines: [
+                  {
+                    color: theme === 'dark' ? 'white' : '#a0a0a0',
+                    size: 1,
+                  },
+                  {
+                    color: theme === 'dark' ? 'yellow' : '#ffe600',
+                    size: 1,
+                  },
+                ],
+              },
             },
-          },
-          true,
-          { id: 'candle_pane', height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
-        );
+            true,
+            { id: 'candle_pane', height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
+          );
+        } else {
+          chart.createIndicator(
+            {
+              visible: !unchangableOverlayVisible,
+              name: 'MA',
+              shouldOhlc: false,
+              calcParams: periodType2MaPeriods[period],
+              styles: {
+                lines: (theme === 'dark' ? DARK_MA_COLORS : MA_COLORS).map((color) => ({
+                  color,
+                  size: 1,
+                })),
+              },
+            },
+            true,
+            { id: 'candle_pane', height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
+          );
+        }
         // chart.createIndicator('BBI', true, { id: 'candle_pane' });
         !hideVol && chart.createIndicator('VOL');
         chart.createIndicator(
           {
             name: 'KDJ',
             styles: {
-              lines: KDJ_COLORS.map((color) => ({
+              lines: (theme === 'dark' ? DARK_KDJ_COLORS : KDJ_COLORS).map((color) => ({
                 color,
                 size: 1,
               })),
@@ -314,7 +325,7 @@ export const Chart = memo(
             ? BAR_SPACE_SIZE[unchangableBarSpace]
             : BAR_SPACE_SIZE[BarSpace.MEDIUM],
         );
-        chart.scrollToDataIndex(list.length - 1);
+        chart.scrollToDataIndex(list.length + (multi ? 1 : 6));
         chart.subscribeAction(ActionType.OnCrosshairChange, (e) => {
           if (typeof e === 'object' && e && 'kLineData' in e) {
             const data = e.kLineData as PriceAndVolumeItem;
@@ -336,6 +347,7 @@ export const Chart = memo(
       hideVol,
       id,
       mini,
+      multi,
     ]);
 
     const onBarSpaceChange = useMemoizedFn((barSpace: BarSpace) => {
@@ -344,7 +356,8 @@ export const Chart = memo(
         [period]: barSpace,
       }));
       chart?.setBarSpace(BAR_SPACE_SIZE[barSpace]);
-      chart?.scrollToDataIndex((list?.length || 1) - 1);
+      chart && list && chart.scrollToDataIndex(list.length + (multi ? 1 : 6));
+      // chart?.scrollToDataIndex((list?.length || 1) - 1);
     });
 
     return (

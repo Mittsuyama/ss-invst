@@ -321,7 +321,10 @@ export const Filter = memo(() => {
           className="ring-0 outline-0 px-6 pt-5"
           style={{ width: 'calc(100% - 220px)', maxWidth: '100%' }}
         >
-          <ButtonGroup orientation="vertical" className="text-sm absolute -left-12 top-4">
+          <ButtonGroup
+            orientation="vertical"
+            className="text-sm absolute -left-12 top-4 bg-background rounded-md"
+          >
             <Button size="icon" variant="outline" onClick={onPrevious}>
               <ChevronUp />
             </Button>

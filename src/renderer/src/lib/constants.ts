@@ -70,7 +70,7 @@ export const periodType2MaPeriods: Record<PeriodType, number[]> = {
   [PeriodType.HALF_HOUR]: [30, 60, 120],
   [PeriodType.HOUR]: [30, 60, 120],
   [PeriodType.DAY]: [30, 60, 120],
-  [PeriodType.WEEK]: [30, 60, 120],
+  [PeriodType.WEEK]: [10, 30, 60],
   [PeriodType.MONTH]: [30, 60, 120],
 };
 

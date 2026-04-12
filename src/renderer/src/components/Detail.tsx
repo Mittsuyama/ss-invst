@@ -71,7 +71,9 @@ export const Detail = memo((props: DetailProps) => {
                   {typeof info.cap === 'number' ? (
                     <div className="space gap-2">
                       {/* <div className="sub-title">市值:</div> */}
-                      <div className="title">{(info.cap / 1_0000_0000).toFixed(0)}亿</div>
+                      <div className="text-muted-foreground">
+                        {(info.cap / 1_0000_0000).toFixed(0)}亿
+                      </div>
                     </div>
                   ) : null}
                 </>
@@ -173,6 +175,7 @@ export const Detail = memo((props: DetailProps) => {
         {chartType2PeriodTypes[chartType]?.map((p) => (
           <div key={`${chartType}-${p}-${refreshCount}-${id}`} className="flex-1 overflow-hidden">
             <Chart
+              multi={chartType2PeriodTypes[chartType].length > 1}
               overlayVisible={overlayVisible}
               id={id}
               // defaultZoom={chartType2PeriodTypes[chartType].length > 1 ? 0.2 : 0.28}

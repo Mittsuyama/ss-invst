@@ -124,7 +124,6 @@ export const fetchFilterList = async (
       Jumpsource: 'edit_way',
     },
   );
-  console.log(res);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const list = (res.data.result.dataList as any[]).map<FilterItem>((item) => {
     const keys = Object.keys(item);
