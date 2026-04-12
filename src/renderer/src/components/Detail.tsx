@@ -62,7 +62,7 @@ export const Detail = memo((props: DetailProps) => {
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex-1 space gap-5 ml-2">
-          <div className="flex-none flex items-center gap-4 my-4">
+          <div className="flex-none flex items-center gap-4">
             <div className="space gap-4">
               {info ? (
                 <>
@@ -104,7 +104,7 @@ export const Detail = memo((props: DetailProps) => {
             value={chartType}
             onValueChange={(v) => setChartType(v as ChartType)}
           >
-            <TabsList>
+            <TabsList className="h-8">
               {[
                 ChartType.WEEK_AND_DAY,
                 ChartType.DAY_AND_HALF_HOUR,
@@ -123,17 +123,17 @@ export const Detail = memo((props: DetailProps) => {
             </TabsList>
           </Tabs>
           <ButtonGroup className="text-sm">
-            <Button variant="outline" onClick={() => setRefreshCount(refreshCount + 1)}>
+            <Button size="sm" variant="outline" onClick={() => setRefreshCount(refreshCount + 1)}>
               {/* <RotateCcw /> */}
               刷新
             </Button>
             {!sidebar && (
-              <Button variant="outline" onClick={() => setFullScreen((pre) => !pre)}>
+              <Button size="sm" variant="outline" onClick={() => setFullScreen((pre) => !pre)}>
                 {fullScreen ? <Minimize /> : <Maximize />}
                 {fullScreen ? '取消全屏' : '全屏模式'}
               </Button>
             )}
-            <Button variant="outline" onClick={() => setOverlayVisible((pre) => !pre)}>
+            <Button size="sm" variant="outline" onClick={() => setOverlayVisible((pre) => !pre)}>
               {overlayVisible ? (
                 <SquareSigma className="*:[rect]:stroke-red-500 *:[path]:stroke-white fill-red-500" />
               ) : (
@@ -143,6 +143,7 @@ export const Detail = memo((props: DetailProps) => {
             </Button>
             {watchIdList.includes(id) ? (
               <Button
+                size="sm"
                 variant="outline"
                 onClick={() => setWatchIdList(watchIdList.filter((item) => item !== id))}
               >
@@ -150,19 +151,24 @@ export const Detail = memo((props: DetailProps) => {
                 备选
               </Button>
             ) : (
-              <Button variant="outline" onClick={() => setWatchIdList([...watchIdList, id])}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setWatchIdList([...watchIdList, id])}
+              >
                 <Aperture /> 备选
               </Button>
             )}
             {favIdList.includes(id) ? (
               <Button
+                size="sm"
                 variant="outline"
                 onClick={() => setFavIdList(favIdList.filter((item) => item !== id))}
               >
                 <Heart className="fill-red-500 stroke-red-500" /> 自选
               </Button>
             ) : (
-              <Button variant="outline" onClick={() => setFavIdList([...favIdList, id])}>
+              <Button size="sm" variant="outline" onClick={() => setFavIdList([...favIdList, id])}>
                 <Heart />
                 自选
               </Button>

@@ -14,7 +14,7 @@ export const ChoiceOverview = memo(() => {
   return (
     <div className="w-full h-full bg-background text-foreground z-50 overflow-hidden flex">
       <div
-        className={clsx('flex-none w-68 overflow-x-hidden overflow-y-auto', {
+        className={clsx('flex-none w-62 overflow-x-hidden overflow-y-auto', {
           hidden: detailFullScreen,
         })}
       >

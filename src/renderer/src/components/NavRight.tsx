@@ -90,13 +90,14 @@ export const NavRight = memo((props: NavRightProps) => {
       <LocalStorageDialog open={localStorageOpen} onOpenChange={setLocalStorageOpen} />
 
       <div
-        className="flex px-2 py-1 mr-2 text-sm text-muted-foreground gap-8 items-center rounded-md bg-muted border-2 border-transparent hover:border-muted-foreground/30 cursor-pointer"
+        className="flex px-2 py-0.5 mr-2 text-xs text-muted-foreground gap-8 items-center rounded-md bg-muted border-2 border-transparent hover:border-muted-foreground/30 cursor-pointer"
         onClick={() => setSearchOpen(true)}
       >
         <div>搜索股票/指数/期权</div>
-        <div className="flex gap-1 items-center text-xs">
-          <div className="px-2 py-[2px] bg-background border rounded-sm">Ctr/Cmd</div>
-          <div className="px-2 py-[2px] bg-background border rounded-sm">K</div>
+        <div className="flex gap-1 items-center text-[11px]">
+          <div className="px-1 py-[1px] bg-background border rounded-sm">Ctr/Cmd + K</div>
+          {/* <div className="px-1 py-[1px] bg-background border rounded-sm">+</div>
+          <div className="px-1 py-[1px] bg-background border rounded-sm">K</div> */}
         </div>
       </div>
 

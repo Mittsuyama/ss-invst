@@ -7,9 +7,9 @@ export const SEGEMENT_COLOR = '#1875C1A1';
 export const UP_PIVOT_COLOR = '#ff8000';
 export const DOWN_PIVOT_COLOR = '#a6ff00';
 
-export const MA_COLORS = ['#888', '#00d9ffaa', '#000dff87', '#a600ff87', '#ff00a287'];
+export const MA_COLORS = ['black', 'orange', 'violet', '#a600ff87', '#ff00a287'];
 export const DARK_MA_COLORS = ['white', 'yellow', 'violet', '#a600ff87', '#ff00a287'];
-export const KDJ_COLORS = ['#868686c5', '#ffb700', '#f700ffa8'];
+export const KDJ_COLORS = ['black', 'orange', 'violet'];
 export const DARK_KDJ_COLORS = ['white', 'yellow', 'violet'];
 
 export interface PivotAttrs {

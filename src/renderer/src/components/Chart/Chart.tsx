@@ -155,6 +155,7 @@ export const Chart = memo(
       })();
     }, [list, chart, unchangableOverlayVisible, period]);
 
+    // 指标显影
     useEffect(() => {
       if (!chart) {
         return;
@@ -267,11 +268,11 @@ export const Chart = memo(
               styles: {
                 lines: [
                   {
-                    color: theme === 'dark' ? 'white' : '#a0a0a0',
+                    color: theme === 'dark' ? 'white' : 'black',
                     size: 1,
                   },
                   {
-                    color: theme === 'dark' ? 'yellow' : '#ffe600',
+                    color: theme === 'dark' ? 'yellow' : 'orange',
                     size: 1,
                   },
                 ],
