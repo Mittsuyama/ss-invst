@@ -193,15 +193,19 @@ export const Filter = memo(() => {
   return (
     <>
       <div
-        className={clsx('h-full p-6 pt-0 flex flex-col', {
+        className={clsx('h-full px-4 flex flex-col', {
           'pointer-events-none opacity-40': loading,
         })}
       >
-        <div className="space mb-2 px-1 flex-none">
+        <div className="space mb-2 flex-none">
           <div className="font-bold mr-4">条件选股</div>
           <div className="text-sm text-muted-foreground pl-1">{CONDITION}</div>
           <div className="ml-auto">
-            <Button onClick={() => fetch(pagination.page, pagination.pageSize)} variant="outline">
+            <Button
+              size="sm"
+              onClick={() => fetch(pagination.page, pagination.pageSize)}
+              variant="outline"
+            >
               <RotateCcw />
               刷新
             </Button>
@@ -264,7 +268,7 @@ export const Filter = memo(() => {
             </Table>
           </div>
           {total && maxPage > 1 ? (
-            <Pagination className="mt-4">
+            <Pagination className="my-4">
               <PaginationContent>
                 <PaginationItem className={clsx({ 'cursor-not-allowed': pagination.page === 1 })}>
                   <PaginationPrevious

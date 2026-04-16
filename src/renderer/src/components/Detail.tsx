@@ -2,7 +2,7 @@ import { memo, ReactNode, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAtom } from 'jotai';
-import { Heart, Aperture, SquareSigma, Maximize, Minimize } from 'lucide-react';
+import { RotateCcw, Heart, Aperture, SquareSigma, Maximize, Minimize } from 'lucide-react';
 import { ChartType, PriceAndVolumeItem } from '@shared/types/stock';
 import { chartType2PeriodTypes, chartTypeTittle } from '@/lib/constants';
 import {
@@ -124,13 +124,13 @@ export const Detail = memo((props: DetailProps) => {
           </Tabs>
           <ButtonGroup className="text-sm">
             <Button size="sm" variant="outline" onClick={() => setRefreshCount(refreshCount + 1)}>
-              {/* <RotateCcw /> */}
+              <RotateCcw />
               刷新
             </Button>
             {!sidebar && (
               <Button size="sm" variant="outline" onClick={() => setFullScreen((pre) => !pre)}>
                 {fullScreen ? <Minimize /> : <Maximize />}
-                {fullScreen ? '取消全屏' : '全屏模式'}
+                全屏
               </Button>
             )}
             <Button size="sm" variant="outline" onClick={() => setOverlayVisible((pre) => !pre)}>

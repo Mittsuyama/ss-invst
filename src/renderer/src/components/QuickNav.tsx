@@ -314,7 +314,7 @@ export const QuickNav = memo(() => {
 
   return (
     <div className="pb-4 h-full flex flex-col">
-      <div className="flex-none px-3 pt-1 mb-1 text-sm text-muted-foreground space">
+      <div className="flex-none px-3 mb-1 text-sm text-muted-foreground space">
         <Select value={type} onValueChange={setType}>
           <SelectTrigger size="sm">
             <SelectValue placeholder="类型" />

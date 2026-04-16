@@ -69,7 +69,7 @@ function App() {
     <>
       <div className="w-full h-full overflow-hidden flex flex-col bg-semi-color-bg-0 bg-background text-foreground">
         <div
-          className={clsx('flex-none w-full py-3 px-2 items-center', {
+          className={clsx('flex-none w-full my-2 px-3 items-center', {
             hidden: detailFullScreen,
             flex: !detailFullScreen,
           })}
