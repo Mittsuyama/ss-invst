@@ -45,6 +45,8 @@ import {
   BAR_SPACE_TITLE,
 } from './helper';
 
+const ZX_TRENDS: PeriodType[] = [PeriodType.DAY, PeriodType.WEEK];
+
 interface ChartProps {
   id: string;
   period: PeriodType;
@@ -160,7 +162,7 @@ export const Chart = memo(
       if (!chart) {
         return;
       }
-      if (period === PeriodType.DAY) {
+      if (ZX_TRENDS.includes(period)) {
         chart.overrideIndicator({
           name: 'ZX-TREND',
           visible: !overlayVisible,
@@ -258,7 +260,7 @@ export const Chart = memo(
             },
           },
         });
-        if (period === PeriodType.DAY) {
+        if (ZX_TRENDS.includes(period)) {
           chart.createIndicator(
             {
               visible: !unchangableOverlayVisible,
