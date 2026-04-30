@@ -314,7 +314,7 @@ export const QuickNav = memo(() => {
 
   return (
     <div className="pb-4 h-full flex flex-col">
-      <div className="flex-none px-3 mb-1 text-sm text-muted-foreground space">
+      <div className="flex-none px-4 mb-1 text-sm text-muted-foreground space">
         <Select value={type} onValueChange={setType}>
           <SelectTrigger size="sm">
             <SelectValue placeholder="类型" />
@@ -345,12 +345,12 @@ export const QuickNav = memo(() => {
           </Button>
         </div>
       </div>
-      <div className="flex-none flex px-3 mt-3 mb-1 justify-between text-sm text-muted-foreground">
+      <div className="flex-none flex px-4 mt-3 mb-2 justify-between text-sm text-muted-foreground">
         <div>名称</div>
         <div>KDJ (加权)</div>
         <div>涨跌幅</div>
       </div>
-      <div className="flex-1 overflow-auto px-1">
+      <div className="flex-1 overflow-auto px-2">
         {options.map((detail) => (
           <SimpleItem key={detail.id} detail={detail} />
         ))}

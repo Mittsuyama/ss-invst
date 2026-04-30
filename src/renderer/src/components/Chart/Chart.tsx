@@ -2,6 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { useSize, useDebounceFn, useMemoizedFn } from 'ahooks';
 import { useAtom, useAtomValue } from 'jotai';
+import { formatValue, isValid } from '@/lib/fork-form-klinecharts';
 import {
   init,
   dispose,
@@ -302,7 +303,46 @@ export const Chart = memo(
           );
         }
         // chart.createIndicator('BBI', true, { id: 'candle_pane' });
-        !hideVol && chart.createIndicator('VOL');
+        !hideVol &&
+          chart.createIndicator({
+            name: 'VOL',
+            figures: [
+              { key: 'ma1', title: 'MA5: ', type: 'line' },
+              { key: 'ma2', title: 'MA10: ', type: 'line' },
+              { key: 'ma3', title: 'MA20: ', type: 'line' },
+              {
+                key: 'volume',
+                title: 'VOLUME: ',
+                type: 'bar',
+                baseValue: 0,
+                styles: ({ data, indicator, defaultStyles }) => {
+                  const prev = data.prev as PriceAndVolumeItem | undefined;
+                  const current = data.current as PriceAndVolumeItem | undefined;
+                  let color = formatValue(
+                    indicator.styles,
+                    'bars[0].noChangeColor',
+                    defaultStyles!.bars[0].noChangeColor,
+                  );
+                  if (isValid(current) && isValid(prev)) {
+                    if (current.close > prev.close) {
+                      color = formatValue(
+                        indicator.styles,
+                        'bars[0].upColor',
+                        defaultStyles!.bars[0].upColor,
+                      );
+                    } else if (current.close < prev.close) {
+                      color = formatValue(
+                        indicator.styles,
+                        'bars[0].downColor',
+                        defaultStyles!.bars[0].downColor,
+                      );
+                    }
+                  }
+                  return { color: color as string };
+                },
+              },
+            ],
+          });
         chart.createIndicator(
           {
             name: 'KDJ',
