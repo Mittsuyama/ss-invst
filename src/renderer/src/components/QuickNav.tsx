@@ -3,16 +3,27 @@ import { useMemoizedFn } from 'ahooks';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
 import { useHistory, useParams } from 'react-router-dom';
-import { RotateCcw, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
+import {
+  RotateCcw,
+  ArrowUpDown,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  Eye,
+  BriefcaseBusiness,
+  Gem,
+  FolderOpen,
+} from 'lucide-react';
 import { useAtom, useAtomValue } from 'jotai';
 import { AreaChart } from '@visactor/react-vchart';
 import { useLatestRequest } from '@/hooks/use-latest-request';
 import { GREEN_RGB, RED_RGB, GREEN_COLOR, RED_COLOR } from '@/lib/constants';
+import { buildConditionStockQuery } from '@/lib/condition-stock';
 import { FilterItem, HistoryOption } from '@renderer/types/search';
 import { PriceAndVolumeItem } from '@shared/types/stock';
 import { RouterKey } from '@renderer/types/global';
 import {
   favStockIdListAtom,
+  qualityStockIdListAtom,
   quickNavDirectionAtom,
   watchStockIdListAtom,
 } from '@renderer/models/detail';
@@ -24,9 +35,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Direction } from '@shared/types/meta';
 import { searchOpenAtom } from '@renderer/models/search';
-import { fetchFilterList } from '@renderer/api/stock';
+import { fetchConditionStockList } from '@renderer/api/stock';
 
 interface NavItemProps {
   detail: HistoryOption;
@@ -237,17 +249,31 @@ export const QuickNav = memo(() => {
   const history = useHistory();
   const { id: idFromParams } = useParams<{ id: string }>();
 
-  const [type, setType] = useState('choice');
+  const [type, setType] = useState('hold');
   const favStockIdList = useAtomValue(favStockIdListAtom);
   const watchIdList = useAtomValue(watchStockIdListAtom);
+  const qualityIdList = useAtomValue(qualityStockIdListAtom);
   const searchOpen = useAtomValue(searchOpenAtom);
   const [direction, setDirection] = useAtom(quickNavDirectionAtom);
   const [options, setOptions] = useState<FilterItem[]>([]);
 
-  const idList = useMemo(
-    () => (type === 'choice' ? favStockIdList : watchIdList),
-    [type, favStockIdList, watchIdList],
-  );
+  const favoriteTypes = [
+    { value: 'watch', label: '关注', Icon: Eye },
+    { value: 'hold', label: '持有', Icon: BriefcaseBusiness },
+    { value: 'quality', label: '优质', Icon: Gem },
+  ];
+
+  const idList = useMemo(() => {
+    switch (type) {
+      case 'watch':
+        return watchIdList;
+      case 'quality':
+        return qualityIdList;
+      default:
+        return favStockIdList;
+    }
+  }, [type, favStockIdList, qualityIdList, watchIdList]);
+  const isEmpty = idList.length < 1;
 
   const sort = useMemoizedFn((a: FilterItem, b: FilterItem, d: Direction | null) => {
     if (!d) {
@@ -261,15 +287,28 @@ export const QuickNav = memo(() => {
   });
 
   const { data, loading, refresh } = useLatestRequest(async () => {
-    const res = await fetchFilterList(
-      `${idList.map((item) => item.split('.')[1]).join(';')};周线周期KDJ(J值);日线周期KDJ(J值);30分钟线周期KDJ(J值);15分钟线周期KDJ(J值);行业`,
+    if (isEmpty) {
+      return [];
+    }
+    const res = await fetchConditionStockList(
+      buildConditionStockQuery(idList, [
+        '周线周期KDJ(J值)',
+        '日线周期KDJ(J值)',
+        '30分钟线周期KDJ(J值)',
+        '15分钟线周期KDJ(J值)',
+        '行业',
+      ]),
     );
     return res.list;
-  }, [idList]);
+  }, [idList, isEmpty]);
 
   useEffect(() => {
+    if (isEmpty) {
+      setOptions([]);
+      return;
+    }
     setOptions(data?.slice()?.sort((a, b) => sort(a, b, direction)) || []);
-  }, [data, direction, sort]);
+  }, [data, direction, isEmpty, sort]);
 
   const onKeyDown = useMemoizedFn((e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey) {
@@ -320,8 +359,14 @@ export const QuickNav = memo(() => {
             <SelectValue placeholder="类型" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="watch">备选</SelectItem>
-            <SelectItem value="choice">持有</SelectItem>
+            {favoriteTypes.map(({ value, label, Icon }) => (
+              <SelectItem key={value} value={value}>
+                <div className="flex items-center gap-2">
+                  <Icon className="size-4" />
+                  {label}
+                </div>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <div className="space ml-auto">
@@ -351,9 +396,24 @@ export const QuickNav = memo(() => {
         <div>涨跌幅</div>
       </div>
       <div className="flex-1 overflow-auto px-2">
-        {options.map((detail) => (
-          <SimpleItem key={detail.id} detail={detail} />
-        ))}
+        {loading ? (
+          <div className="space-y-2 px-1">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="rounded-md px-3 py-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-2 h-3 w-16" />
+              </div>
+            ))}
+          </div>
+        ) : isEmpty ? (
+          <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
+            <FolderOpen className="mb-3 size-8" />
+            <div className="text-sm">当前收藏夹还是空的</div>
+            <div className="mt-1 text-xs">先去详情页把股票加入这个收藏夹</div>
+          </div>
+        ) : (
+          options.map((detail) => <SimpleItem key={detail.id} detail={detail} />)
+        )}
       </div>
     </div>
   );

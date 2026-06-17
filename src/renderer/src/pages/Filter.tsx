@@ -3,9 +3,8 @@ import { useMemoizedFn } from 'ahooks';
 import clsx from 'clsx';
 import { request } from '@renderer/lib/request';
 import { RequestType } from '@shared/types/request';
-import { ChevronDown, ChevronUp, MoreHorizontal, RotateCcw } from 'lucide-react';
+import { MoreHorizontal, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
 import {
   Table,
   TableBody,
@@ -23,9 +22,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Drawer, DrawerContent } from '@/components/ui/drawer';
-import { Detail } from '@/components/Detail';
-import { fetchFilterList } from '@renderer/api/stock';
+import { StockDetailDrawer } from '@/components/StockDetailDrawer';
+import { fetchConditionStockList } from '@renderer/api/stock';
 import { FilterColumn, FilterItem } from '@renderer/types/search';
 
 const COLUMN_ORDER = [
@@ -70,7 +68,10 @@ export const Filter = memo(() => {
     try {
       const lastIndex = records.findIndex((item) => item.id === current?.id);
       setLoading(true);
-      const { list, total, columns } = await fetchFilterList(CONDITION, { page, pageSize });
+      const { list, total, columns } = await fetchConditionStockList(CONDITION, {
+        page,
+        pageSize,
+      });
       setColumns(
         columns
           .filter((item) => COLUMN_ORDER.some((c) => new RegExp(c).test(item.key)))
@@ -320,45 +321,14 @@ export const Filter = memo(() => {
           ) : null}
         </div>
       </div>
-      <Drawer open={!!current} onClose={() => setCurrent(null)} direction="right">
-        <DrawerContent
-          className="ring-0 outline-0 px-6 pt-5"
-          style={{ width: 'calc(100% - 220px)', maxWidth: '100%' }}
-        >
-          <ButtonGroup
-            orientation="vertical"
-            className="text-sm absolute -left-12 top-4 bg-background rounded-md"
-          >
-            <Button size="icon" variant="outline" onClick={onPrevious}>
-              <ChevronUp />
-            </Button>
-            <Button size="icon" variant="outline" onClick={onNext}>
-              <ChevronDown />
-            </Button>
-          </ButtonGroup>
-          {currentId ? (
-            <Detail
-              sidebar
-              className={clsx('h-full', {
-                'opacity-25': currentIdLoading,
-              })}
-              id={currentId}
-              // headerExtra={
-              //   <ButtonGroup className="text-sm">
-              //     <Button variant="outline" onClick={onPrevious}>
-              //       <ChevronLeft className="" />
-              //       上一个
-              //     </Button>
-              //     <Button variant="outline" onClick={onNext}>
-              //       下一个
-              //       <ChevronRight className="" />
-              //     </Button>
-              //   </ButtonGroup>
-              // }
-            />
-          ) : null}
-        </DrawerContent>
-      </Drawer>
+      <StockDetailDrawer
+        open={!!current}
+        onClose={() => setCurrent(null)}
+        id={currentId}
+        onPrevious={onPrevious}
+        onNext={onNext}
+        loading={currentIdLoading}
+      />
     </>
   );
 });

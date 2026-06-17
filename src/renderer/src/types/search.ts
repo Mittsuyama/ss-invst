@@ -38,6 +38,9 @@ export interface FilterItem {
   kdj_week: number;
   kdj_half_hour: number;
   kdj_fifteen_minute: number;
+  pb?: number;
+  peTtm?: number;
+  dividend?: number;
 }
 
 export interface FilterColumn {

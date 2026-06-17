@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { RealtimeCard } from '@/components/RealtimeCard';
 import { SearchPannel } from '@/components/SearchPannel';
 import { useMemoizedFn } from 'ahooks';
-import { fetchFilterList } from '@renderer/api/stock';
+import { buildConditionStockQuery } from '@/lib/condition-stock';
+import { fetchConditionStockList } from '@renderer/api/stock';
 
 export const Realtime = memo(() => {
   const [ids, setIds] = useAtom(realtimeStockIdListAtom);
@@ -42,8 +43,13 @@ export const Realtime = memo(() => {
     }
     try {
       setLoading(true);
-      const res = await fetchFilterList(
-        `${ids.map((item) => item.split('.')[1]).join(';')};周线周期KDJ(J值);日线周期KDJ(J值);30分钟线周期KDJ(J值);15分钟线周期KDJ(J值)`,
+      const res = await fetchConditionStockList(
+        buildConditionStockQuery(ids, [
+          '周线周期KDJ(J值)',
+          '日线周期KDJ(J值)',
+          '30分钟线周期KDJ(J值)',
+          '15分钟线周期KDJ(J值)',
+        ]),
       );
       setList(res.list.sort((a, b) => sort(a, b, d)));
     } finally {

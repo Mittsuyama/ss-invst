@@ -30,6 +30,17 @@ export const watchStockIdListAtom = atomWithStorage<Array<string>>(
     getOnInit: true,
   },
 );
+export const qualityStockIdListAtom = atomWithStorage<Array<string>>(
+  'quality-stock-id-list',
+  [],
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
+export const cookieAtom = atomWithStorage<string>('request-cookie', '', undefined, {
+  getOnInit: true,
+});
 export const realtimeStockIdListAtom = atomWithStorage<Array<string>>(
   'realtime-stock-id-list',
   [],

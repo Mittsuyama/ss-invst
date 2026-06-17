@@ -2,7 +2,16 @@ import { memo, ReactNode, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAtom } from 'jotai';
-import { RotateCcw, Heart, Aperture, SquareSigma, Maximize, Minimize } from 'lucide-react';
+import {
+  RotateCcw,
+  Eye,
+  BriefcaseBusiness,
+  Gem,
+  SquareSigma,
+  Maximize,
+  Minimize,
+  Plus,
+} from 'lucide-react';
 import { ChartType, PriceAndVolumeItem } from '@shared/types/stock';
 import { chartType2PeriodTypes, chartTypeTittle } from '@/lib/constants';
 import {
@@ -10,6 +19,7 @@ import {
   chartTypeAtom,
   chanlunVisibleAtom,
   watchStockIdListAtom,
+  qualityStockIdListAtom,
   detailFullScreenAtom,
 } from '@/models/detail';
 import { fetchStockInfo } from '@/api/stock';
@@ -22,6 +32,12 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useLatestRequest } from '@/hooks/use-latest-request';
 
 import { Chart } from './Chart';
@@ -39,12 +55,48 @@ export const Detail = memo((props: DetailProps) => {
   const [fullScreen, setFullScreen] = useAtom(detailFullScreenAtom);
   const [watchIdList, setWatchIdList] = useAtom(watchStockIdListAtom);
   const [favIdList, setFavIdList] = useAtom(favStockIdListAtom);
+  const [qualityIdList, setQualityIdList] = useAtom(qualityStockIdListAtom);
   const [overlayVisible, setOverlayVisible] = useAtom(chanlunVisibleAtom);
   const [chartType, setChartType] = useAtom(chartTypeAtom);
   const [current, setCurrent] = useState<PriceAndVolumeItem | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
   const { data: info } = useLatestRequest(() => fetchStockInfo(id), [id]);
+
+  const favoriteMenus = [
+    {
+      label: '关注',
+      active: watchIdList.includes(id),
+      Icon: Eye,
+      onClick: () =>
+        setWatchIdList(
+          watchIdList.includes(id)
+            ? watchIdList.filter((item) => item !== id)
+            : [...watchIdList, id],
+        ),
+    },
+    {
+      label: '持有',
+      active: favIdList.includes(id),
+      Icon: BriefcaseBusiness,
+      onClick: () =>
+        setFavIdList(
+          favIdList.includes(id) ? favIdList.filter((item) => item !== id) : [...favIdList, id],
+        ),
+    },
+    {
+      label: '优质',
+      active: qualityIdList.includes(id),
+      Icon: Gem,
+      onClick: () =>
+        setQualityIdList(
+          qualityIdList.includes(id)
+            ? qualityIdList.filter((item) => item !== id)
+            : [...qualityIdList, id],
+        ),
+    },
+  ];
+  const joinedAnyFavorite = favoriteMenus.some((item) => item.active);
 
   return (
     <div className={clsx('overflow-hidden flex flex-col', className)}>
@@ -61,7 +113,7 @@ export const Detail = memo((props: DetailProps) => {
             {/* <BreadcrumbItem>个股详情 {id}</BreadcrumbItem> */}
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="flex-1 space gap-5 ml-2">
+        <div className="flex-1 space gap-5 ml-2 pt-0.5">
           <div className="flex-none flex items-center gap-4">
             <div className="space gap-4">
               {info ? (
@@ -133,7 +185,12 @@ export const Detail = memo((props: DetailProps) => {
                 全屏
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={() => setOverlayVisible((pre) => !pre)}>
+            <Button
+              size="sm"
+              variant="outline"
+              style={{ borderRightWidth: 0 }}
+              onClick={() => setOverlayVisible((pre) => !pre)}
+            >
               {overlayVisible ? (
                 <SquareSigma className="*:[rect]:stroke-red-500 *:[path]:stroke-white fill-red-500" />
               ) : (
@@ -141,38 +198,33 @@ export const Detail = memo((props: DetailProps) => {
               )}
               缠论
             </Button>
-            {watchIdList.includes(id) ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setWatchIdList(watchIdList.filter((item) => item !== id))}
-              >
-                <Aperture className="*:[path]:stroke-red-500 *:[circle]:stroke-red-500 fill-white" />
-                备选
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setWatchIdList([...watchIdList, id])}
-              >
-                <Aperture /> 备选
-              </Button>
-            )}
-            {favIdList.includes(id) ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setFavIdList(favIdList.filter((item) => item !== id))}
-              >
-                <Heart className="fill-red-500 stroke-red-500" /> 自选
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => setFavIdList([...favIdList, id])}>
-                <Heart />
-                自选
-              </Button>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  style={{ borderLeftWidth: 1 }}
+                  className={clsx(
+                    joinedAnyFavorite && 'text-red-500 border-red-500 hover:text-red-500',
+                  )}
+                >
+                  <Plus className={clsx(joinedAnyFavorite && 'text-red-500')} />
+                  {joinedAnyFavorite ? '已加入' : '加入'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {favoriteMenus.map(({ label, active, Icon, onClick }) => (
+                  <DropdownMenuItem
+                    key={label}
+                    onClick={onClick}
+                    style={active ? { color: 'var(--color-red-500)' } : {}}
+                  >
+                    <Icon className={clsx(active && 'text-red-500')} />
+                    {label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </ButtonGroup>
           {headerExtra}
         </div>

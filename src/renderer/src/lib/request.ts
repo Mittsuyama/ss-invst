@@ -1,6 +1,8 @@
+import { getDefaultStore } from 'jotai';
 import { toast } from 'sonner';
 import { RequestType } from '@shared/types/request';
 import type { Pivot, PriceAndVolumeItem, Stroke } from '@shared/types/stock';
+import { cookieAtom } from '@/models/detail';
 
 export async function request(
   type: RequestType.GET | RequestType.POST,
@@ -8,7 +10,9 @@ export async function request(
   params?: Record<string, unknown>,
   headers?: Record<string, unknown>,
 ) {
-  const res = await window.electron.ipcRenderer.invoke(type, url, params, headers);
+  const cookie = getDefaultStore().get(cookieAtom);
+  const mergedHeaders = { ...headers, cookie: cookie || headers?.cookie };
+  const res = await window.electron.ipcRenderer.invoke(type, url, params, mergedHeaders);
   if (res.code === 0) {
     return res.data;
   }

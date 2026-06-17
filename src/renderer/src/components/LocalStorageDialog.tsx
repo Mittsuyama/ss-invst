@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Dialog, DialogTitle, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,12 @@ export const LocalStorageDialog = memo((props: LocalStorageDialogProps) => {
   const { open, onOpenChange } = props;
   const [value, setValue] = useState(JSON.stringify(localStorage));
 
+  useEffect(() => {
+    if (open) {
+      setValue(JSON.stringify(localStorage));
+    }
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false}>
@@ -23,7 +29,18 @@ export const LocalStorageDialog = memo((props: LocalStorageDialogProps) => {
           spellCheck={false}
         />
         <div className="flex justify-end">
-          <Button>确认修改</Button>
+          <Button
+            onClick={() => {
+              const next = JSON.parse(value) as Record<string, string>;
+              localStorage.clear();
+              Object.entries(next).forEach(([key, item]) => {
+                localStorage.setItem(key, typeof item === 'string' ? item : JSON.stringify(item));
+              });
+              onOpenChange?.(false);
+            }}
+          >
+            确认修改
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

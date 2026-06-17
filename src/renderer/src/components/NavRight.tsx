@@ -3,7 +3,7 @@ import { useAtom } from 'jotai';
 import { clsx } from 'clsx';
 import { useHistory } from 'react-router-dom';
 import { useMemoizedFn } from 'ahooks';
-import { Sun, Moon, SunMoon, Clover, FolderGit2 } from 'lucide-react';
+import { Sun, Moon, SunMoon, Clover, FolderGit2, Cookie } from 'lucide-react';
 import { RouterKey } from '@/types/global';
 import { FilterItem } from '@/types/search';
 import { useTheme } from '@/hooks/use-theme';
@@ -14,11 +14,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { fetchFilterList } from '@renderer/api/stock';
+import { fetchConditionStockList } from '@renderer/api/stock';
 import { searchOpenAtom } from '@renderer/models/search';
 
 import { SearchPannel } from './SearchPannel';
 import { LocalStorageDialog } from './LocalStorageDialog';
+import { CookieDialog } from './CookieDialog';
 
 interface NavRightProps {
   className?: string;
@@ -31,11 +32,12 @@ export const NavRight = memo((props: NavRightProps) => {
   const [searchOpen, setSearchOpen] = useAtom(searchOpenAtom);
   const [candidates, setCadidates] = useState<FilterItem[] | null>(null);
   const [localStorageOpen, setLocalStorageOpen] = useState(false);
+  const [cookieOpen, setCookieOpen] = useState(false);
 
   const onRandom = useMemoizedFn(async () => {
     let list = candidates?.slice();
     if (!list?.length) {
-      const res = await fetchFilterList('上市时间>2年;日线周期KDJ(J值)<10;总市值>50亿');
+      const res = await fetchConditionStockList('上市时间>2年;日线周期KDJ(J值)<10;总市值>50亿');
       res.list.sort(() => Math.random() - 0.5);
       list = res.list;
     }
@@ -88,6 +90,7 @@ export const NavRight = memo((props: NavRightProps) => {
       />
 
       <LocalStorageDialog open={localStorageOpen} onOpenChange={setLocalStorageOpen} />
+      <CookieDialog open={cookieOpen} onOpenChange={setCookieOpen} />
 
       <div
         className="flex px-3 py-1 mr-2 text-xs text-muted-foreground gap-8 items-center rounded-md bg-muted border-2 border-transparent hover:border-muted-foreground/30 cursor-pointer"
@@ -111,6 +114,15 @@ export const NavRight = memo((props: NavRightProps) => {
           <DropdownMenuItem onClick={() => onThemeSettingChange('dark')}>深色</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Tooltip>
+        <TooltipTrigger className="rounded-md">
+          <div onClick={() => setCookieOpen((pre) => !pre)} className={clsx('p-2 hover:bg-muted rounded-md')}>
+            <Cookie size={17} />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>设置 Cookie</TooltipContent>
+      </Tooltip>
 
       <Tooltip>
         <TooltipTrigger className="rounded-md">
