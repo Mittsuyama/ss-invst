@@ -84,3 +84,11 @@ export const barSpaceInPeriodAtom = atomWithStorage<Partial<Record<PeriodType, B
     getOnInit: true,
   },
 );
+export const holdQuantityAtom = atomWithStorage<Record<string, number>>(
+  'hold-quantity',
+  {},
+  undefined,
+  {
+    getOnInit: true,
+  },
+);

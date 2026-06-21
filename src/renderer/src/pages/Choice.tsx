@@ -1,15 +1,17 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import {
   ArrowDownWideNarrow,
   ArrowUpDown,
   ArrowUpNarrowWide,
   BriefcaseBusiness,
   Eye,
+  EyeOff,
   Gem,
   FolderOpen,
+  Pencil,
   RotateCcw,
 } from 'lucide-react';
 import { GREEN_COLOR, RED_COLOR } from '@/lib/constants';
@@ -17,12 +19,16 @@ import { buildConditionStockQuery } from '@/lib/condition-stock';
 import { fetchConditionStockList } from '@renderer/api/stock';
 import {
   favStockIdListAtom,
+  holdQuantityAtom,
   qualityStockIdListAtom,
   watchStockIdListAtom,
 } from '@renderer/models/detail';
 import { FilterItem } from '@renderer/types/search';
 import { StockDetailDrawer } from '@/components/StockDetailDrawer';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
+import { EditHoldDialog } from '@/components/EditHoldDialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -48,9 +54,21 @@ const favoriteTypes = [
 
 type FavoriteType = (typeof favoriteTypes)[number]['value'];
 type SortDirection = 'asc' | 'desc' | null;
-type SortKey = 'chg' | 'kdj_day' | 'kdj_week' | 'weightedKdj';
+type SortKey =
+  | 'chg'
+  | 'kdj_day'
+  | 'kdj_week'
+  | 'weightedKdj'
+  | 'positionPct'
+  | 'pb'
+  | 'peTtm'
+  | 'dividend'
+  | 'marketValue';
 
-const sortConfigs: Record<SortKey, { label: string; getValue: (item: FilterItem) => number }> = {
+const sortConfigs: Record<
+  Exclude<SortKey, 'positionPct'>,
+  { label: string; getValue: (item: FilterItem) => number }
+> = {
   chg: { label: '涨跌幅', getValue: (item) => item.chg },
   kdj_day: { label: 'KDJ(日)', getValue: (item) => item.kdj_day },
   kdj_week: { label: 'KDJ(周)', getValue: (item) => item.kdj_week },
@@ -58,6 +76,10 @@ const sortConfigs: Record<SortKey, { label: string; getValue: (item: FilterItem)
     label: '加权KDJ',
     getValue: (item) => item.kdj_day * 0.8 + item.kdj_week * 0.2,
   },
+  pb: { label: 'PB', getValue: (item) => item.pb ?? Number.NaN },
+  peTtm: { label: 'PE(TTM)', getValue: (item) => item.peTtm ?? Number.NaN },
+  dividend: { label: '股息率', getValue: (item) => item.dividend ?? Number.NaN },
+  marketValue: { label: '总市值(亿)', getValue: (item) => item.totalMarketValue },
 };
 
 export const Choice = memo(() => {
@@ -69,8 +91,12 @@ export const Choice = memo(() => {
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<FilterItem[]>([]);
   const [current, setCurrent] = useState<FilterItem | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>('chg');
+  const [sortKey, setSortKey] = useState<SortKey>('weightedKdj');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [editOpen, setEditOpen] = useState(false);
+  const [showAmounts, setShowAmounts] = useState(false);
+  const [editingQuantityId, setEditingQuantityId] = useState<string | null>(null);
+  const [holdQuantity, setHoldQuantity] = useAtom(holdQuantityAtom);
 
   const idList = useMemo(() => {
     switch (favoriteType) {
@@ -123,16 +149,45 @@ export const Choice = memo(() => {
     return () => window.clearInterval(timer);
   }, [fetchRecords, isEmpty]);
 
+  const holdingSummary = useMemo(() => {
+    let totalValue = 0;
+    let totalCostBasis = 0;
+    let totalPnl = 0;
+    for (const record of records) {
+      const qty = holdQuantity[record.id];
+      if (!qty || qty <= 0) continue;
+      totalValue += record.price * qty;
+      if (!Number.isNaN(record.chg)) {
+        const prevClose = record.price / (1 + record.chg / 100);
+        totalCostBasis += prevClose * qty;
+        totalPnl += (record.price - prevClose) * qty;
+      } else {
+        totalCostBasis += record.price * qty;
+      }
+    }
+    const pnlPct = totalCostBasis > 0 ? (totalPnl / totalCostBasis) * 100 : 0;
+    return { totalValue, totalPnl, pnlPct };
+  }, [records, holdQuantity]);
+
   const sortedRecords = useMemo(() => {
-    const sortConfig = sortConfigs[sortKey];
     return records.slice().sort((a, b) => {
       if (!sortDirection) {
         return idList.indexOf(a.id) - idList.indexOf(b.id);
       }
-      const diff = sortConfig.getValue(a) - sortConfig.getValue(b);
+      let diff: number;
+      if (sortKey === 'positionPct') {
+        const getPct = (item: FilterItem) => {
+          const qty = holdQuantity[item.id];
+          if (!qty || qty <= 0 || holdingSummary.totalValue <= 0) return 0;
+          return ((item.price * qty) / holdingSummary.totalValue) * 100;
+        };
+        diff = getPct(a) - getPct(b);
+      } else {
+        diff = sortConfigs[sortKey].getValue(a) - sortConfigs[sortKey].getValue(b);
+      }
       return sortDirection === 'asc' ? diff : -diff;
     });
-  }, [idList, records, sortDirection, sortKey]);
+  }, [idList, records, sortDirection, sortKey, holdQuantity, holdingSummary.totalValue]);
 
   const onSort = useMemoizedFn((key: SortKey) => {
     if (sortKey !== key) {
@@ -181,26 +236,26 @@ export const Choice = memo(() => {
     );
   };
 
-  const currentIndex = records.findIndex((item) => item.id === current?.id);
+  const currentIndex = sortedRecords.findIndex((item) => item.id === current?.id);
 
   const onPrevious = useMemoizedFn(() => {
     if (currentIndex < 1) {
       return;
     }
-    setCurrent(records[currentIndex - 1]);
+    setCurrent(sortedRecords[currentIndex - 1]);
   });
 
   const onNext = useMemoizedFn(() => {
-    if (currentIndex === -1 || currentIndex >= records.length - 1) {
+    if (currentIndex === -1 || currentIndex >= sortedRecords.length - 1) {
       return;
     }
-    setCurrent(records[currentIndex + 1]);
+    setCurrent(sortedRecords[currentIndex + 1]);
   });
 
   return (
     <>
       <div className="h-full px-4 pb-4 flex flex-col">
-        <div className="flex-none flex items-center gap-3 mb-4">
+        <div className="flex-none flex items-center gap-3 mb-3 mt-1">
           <div className="font-bold text-base">收藏夹</div>
           <Select
             value={favoriteType}
@@ -221,10 +276,43 @@ export const Choice = memo(() => {
             </SelectContent>
           </Select>
           <div className="text-sm text-muted-foreground">共 {idList.length} 只</div>
-          <Button className="ml-auto" size="sm" variant="outline" onClick={() => fetchRecords()}>
-            <RotateCcw className={clsx(loading && 'animate-spin')} />
-            刷新
-          </Button>
+          {!isEmpty && (
+            <>
+              <div className="text-sm text-muted-foreground">
+                总持仓：{showAmounts ? `¥${holdingSummary.totalValue.toFixed(2)}` : '***'}
+              </div>
+              <div
+                className={clsx('text-sm', {
+                  'text-red-500': holdingSummary.totalPnl > 0,
+                  'text-green-500': holdingSummary.totalPnl < 0,
+                  'text-muted-foreground': holdingSummary.totalPnl === 0,
+                })}
+              >
+                今日盈亏：
+                {showAmounts ? `¥${holdingSummary.totalPnl.toFixed(2)}` : '***'}（
+                {holdingSummary.pnlPct >= 0 ? '+' : ''}
+                {holdingSummary.pnlPct.toFixed(2)}%）
+              </div>
+            </>
+          )}
+          <ButtonGroup className="ml-auto">
+            <Button size="sm" variant="outline" onClick={() => fetchRecords()}>
+              <RotateCcw className={clsx(loading && 'animate-spin')} />
+              刷新
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+              <Pencil />
+              编辑
+            </Button>
+            <Button
+              size="sm"
+              variant={showAmounts ? 'outline' : 'secondary'}
+              onClick={() => setShowAmounts((prev) => !prev)}
+            >
+              {showAmounts ? <Eye /> : <EyeOff />}
+              {showAmounts ? '隐藏' : '显示'}
+            </Button>
+          </ButtonGroup>
         </div>
 
         <div className="flex-1 overflow-auto border rounded-2xl px-4 py-3">
@@ -286,10 +374,53 @@ export const Choice = memo(() => {
                       {sortIconRender('kdj_week')}
                     </div>
                   </TableHead>
-                  <TableHead>PB</TableHead>
-                  <TableHead>PE(TTM)</TableHead>
-                  <TableHead>股息率</TableHead>
-                  <TableHead className="text-right">总市值(亿)</TableHead>
+                  <TableHead>
+                    <div
+                      className="h-full flex gap-1 items-center hover:bg-secondary cursor-default"
+                      onClick={() => onSort('pb')}
+                    >
+                      PB
+                      {sortIconRender('pb')}
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div
+                      className="h-full flex gap-1 items-center hover:bg-secondary cursor-default"
+                      onClick={() => onSort('peTtm')}
+                    >
+                      PE(TTM)
+                      {sortIconRender('peTtm')}
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div
+                      className="h-full flex gap-1 items-center hover:bg-secondary cursor-default"
+                      onClick={() => onSort('dividend')}
+                    >
+                      股息率
+                      {sortIconRender('dividend')}
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div
+                      className="h-full flex gap-1 items-center hover:bg-secondary cursor-default"
+                      onClick={() => onSort('marketValue')}
+                    >
+                      总市值(亿)
+                      {sortIconRender('marketValue')}
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div
+                      className="h-full flex gap-1 items-center hover:bg-secondary cursor-default"
+                      onClick={() => onSort('positionPct')}
+                    >
+                      持仓占比
+                      {sortIconRender('positionPct')}
+                    </div>
+                  </TableHead>
+                  <TableHead>持仓市值</TableHead>
+                  <TableHead className="text-right w-22">持有股数</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -323,8 +454,63 @@ export const Choice = memo(() => {
                       <TableCell>
                         {numberCellRender(record.dividend ?? Number.NaN, 2, '%')}
                       </TableCell>
-                      <TableCell className="text-right">
-                        {numberCellRender(record.totalMarketValue, 0)}
+                      <TableCell>{numberCellRender(record.totalMarketValue, 0)}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const qty = holdQuantity[record.id];
+                          if (!qty || qty <= 0 || holdingSummary.totalValue <= 0) return '-';
+                          if (!showAmounts) return '***';
+                          const pct = ((record.price * qty) / holdingSummary.totalValue) * 100;
+                          return `${pct.toFixed(1)}%`;
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const qty = holdQuantity[record.id];
+                          if (!qty || qty <= 0) return '-';
+                          if (!showAmounts) return '***';
+                          return `¥${(record.price * qty).toFixed(2)}`;
+                        })()}
+                      </TableCell>
+                      <TableCell className="flex justify-end w-22">
+                        {editingQuantityId === record.id ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            step="100"
+                            className="h-6 ml-auto"
+                            defaultValue={holdQuantity[record.id] || ''}
+                            autoFocus
+                            onBlur={(e) => {
+                              const num = Number(e.target.value);
+                              setHoldQuantity((prev) => {
+                                const next = { ...prev };
+                                if (Number.isNaN(num) || num <= 0) {
+                                  delete next[record.id];
+                                } else {
+                                  next[record.id] = num;
+                                }
+                                return next;
+                              });
+                              setEditingQuantityId(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                              if (e.key === 'Escape') {
+                                setEditingQuantityId(null);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:opacity-60"
+                            onClick={() => setEditingQuantityId(record.id)}
+                          >
+                            {holdQuantity[record.id] || '-'}
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -342,6 +528,13 @@ export const Choice = memo(() => {
         onNext={onNext}
         previousDisabled={currentIndex < 1}
         nextDisabled={currentIndex === -1 || currentIndex >= records.length - 1}
+      />
+      <EditHoldDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        records={records}
+        holdQuantity={holdQuantity}
+        onSave={setHoldQuantity}
       />
     </>
   );
