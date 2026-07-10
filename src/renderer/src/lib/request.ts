@@ -25,12 +25,12 @@ export async function listGetRequest(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<Array<any>> {
   const res = await window.electron.ipcRenderer.invoke(RequestType.LIST_GET, list);
-  const error = res.find((item) => item.code !== 0);
+  const error = res.find((item: any) => item.code !== 0);
   if (error) {
     toast.error(error.message);
     throw new Error(error.message);
   }
-  return res.map((item) => item.data);
+  return res.map((item: any) => item.data);
 }
 
 export async function chanlunComputeRequest(list: PriceAndVolumeItem[]) {

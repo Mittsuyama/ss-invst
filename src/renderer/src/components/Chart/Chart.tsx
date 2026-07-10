@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState, useMemo } from 'react';
 import clsx from 'clsx';
 import { useSize, useDebounceFn, useMemoizedFn } from 'ahooks';
 import { useAtom, useAtomValue } from 'jotai';
@@ -62,6 +62,8 @@ interface ChartProps {
   mini?: boolean;
   /** 多图并存 */
   multi?: boolean;
+  /** 选择最后一个 K 线作为默认价格 */
+  autoSelectLast?: boolean;
 }
 
 const LARGET_INDICATOR_HEIGHT = 80;
@@ -78,6 +80,7 @@ export const Chart = memo(
     hideResetScale,
     mini,
     multi,
+    autoSelectLast,
   }: ChartProps) => {
     const theme = useAtomValue(themeAtom);
     const [barSpaceInPeriod, setBarSpaceInPeriod] = useAtom(barSpaceInPeriodAtom);
@@ -96,6 +99,8 @@ export const Chart = memo(
     );
 
     const size = useSize(chartDivRef);
+
+    const last = useMemo(() => list?.at(-1), [list]);
 
     useEffect(onDebouncedResize, [onDebouncedResize, size]);
 
@@ -157,6 +162,12 @@ export const Chart = memo(
         }
       })();
     }, [list, chart, unchangableOverlayVisible, period]);
+
+    useEffect(() => {
+      if (last && autoSelectLast) {
+        setCurrent?.(last);
+      }
+    }, [autoSelectLast, list]);
 
     // 指标显影
     useEffect(() => {
@@ -430,7 +441,7 @@ export const Chart = memo(
         )}
         <div
           ref={chartDivRef}
-          onMouseOut={() => setCurrent?.(null)}
+          onMouseOut={() => (autoSelectLast && last ? setCurrent?.(last) : setCurrent?.(null))}
           id={`${CHART_ID_PREFIX}-${id}-${period}`}
           className="w-full h-full overflow-hidden relative z-10"
         />

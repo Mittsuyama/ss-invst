@@ -41,6 +41,7 @@ import {
 import { useLatestRequest } from '@/hooks/use-latest-request';
 
 import { Chart } from './Chart';
+import { TimeSharingChart } from './Chart/TimeSharingChart';
 
 interface DetailProps {
   id: string;
@@ -135,7 +136,7 @@ export const Detail = memo((props: DetailProps) => {
           {current ? (
             <>
               <div className="space gap-2">
-                <div className="sub-title">收盘价</div>
+                <div className="sub-title">股价</div>
                 <div className="font-bold">{current.close}</div>
               </div>
               <div className="space gap-2">
@@ -160,11 +161,12 @@ export const Detail = memo((props: DetailProps) => {
               {[
                 ChartType.WEEK_AND_DAY,
                 ChartType.DAY_AND_HALF_HOUR,
-                ChartType.DAY_AND_FIFTEEN_MINUTE,
+                // ChartType.DAY_AND_FIFTEEN_MINUTE,
                 // ChartType.DAY_AND_FIVE_MINUTE,
                 // ChartType.FIFTEEN_AND_FIVE_MINUTE,
                 ChartType.DAY,
                 ChartType.FIVE_MINUTE,
+                ChartType.TIME_SHARING,
                 // ChartType.WEEK,
                 // ChartType.MONTH,
               ].map((c) => (
@@ -230,7 +232,12 @@ export const Detail = memo((props: DetailProps) => {
         </div>
       </div>
       <div className="flex-1 flex overflow-hidden gap-6 pb-6">
-        {chartType2PeriodTypes[chartType]?.map((p) => (
+        {chartType === ChartType.TIME_SHARING ? (
+          <div className="flex-1 overflow-hidden">
+            <TimeSharingChart id={id} setCurrent={setCurrent} />
+          </div>
+        ) : (
+          chartType2PeriodTypes[chartType]?.map((p, index) => (
           <div key={`${chartType}-${p}-${refreshCount}-${id}`} className="flex-1 overflow-hidden">
             <Chart
               multi={chartType2PeriodTypes[chartType].length > 1}
@@ -239,9 +246,11 @@ export const Detail = memo((props: DetailProps) => {
               // defaultZoom={chartType2PeriodTypes[chartType].length > 1 ? 0.2 : 0.28}
               period={p}
               setCurrent={setCurrent}
+              autoSelectLast={index === chartType2PeriodTypes[chartType].length - 1}
             />
           </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
