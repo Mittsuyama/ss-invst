@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { getDefaultStore } from 'jotai';
 import { RequestType } from '@shared/types/request';
-import { cookieAtom } from '@/models/detail';
+import { envAtom } from '@/models/detail';
 
 export const SSE_TICK_DETAILS_DATA_CHANNEL = 'sse-tick-details-data';
 
@@ -54,7 +54,7 @@ export function parseSseResponse(res: SseTickDetailsResponse): {
 }
 
 export function startTickDetailsSse(secid: string) {
-  const cookie = getDefaultStore().get(cookieAtom);
+  const cookie = getDefaultStore().get(envAtom).cookie;
   window.electron.ipcRenderer.send(RequestType.SSE_TICK_DETAILS_START, secid, cookie);
 }
 
@@ -62,9 +62,7 @@ export function stopTickDetailsSse() {
   window.electron.ipcRenderer.send(RequestType.SSE_TICK_DETAILS_STOP);
 }
 
-export function onTickDetailsData(
-  callback: (res: SseTickDetailsResponse) => void,
-): () => void {
+export function onTickDetailsData(callback: (res: SseTickDetailsResponse) => void): () => void {
   const handler = (_event: unknown, data: SseTickDetailsResponse) => callback(data);
   window.electron.ipcRenderer.on(SSE_TICK_DETAILS_DATA_CHANNEL, handler);
   return () => {

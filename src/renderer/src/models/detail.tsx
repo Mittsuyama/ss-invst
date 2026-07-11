@@ -38,9 +38,19 @@ export const qualityStockIdListAtom = atomWithStorage<Array<string>>(
     getOnInit: true,
   },
 );
-export const cookieAtom = atomWithStorage<string>('request-cookie', '', undefined, {
-  getOnInit: true,
-});
+export interface EnvConfig {
+  cookie: string;
+  tushareToken: string;
+}
+
+export const envAtom = atomWithStorage<EnvConfig>(
+  'env-config',
+  { cookie: '', tushareToken: '' },
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
 export const realtimeStockIdListAtom = atomWithStorage<Array<string>>(
   'realtime-stock-id-list',
   [],

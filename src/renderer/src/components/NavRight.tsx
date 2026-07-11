@@ -3,7 +3,7 @@ import { useAtom } from 'jotai';
 import { clsx } from 'clsx';
 import { useHistory } from 'react-router-dom';
 import { useMemoizedFn } from 'ahooks';
-import { Sun, Moon, SunMoon, Clover, FolderGit2, Cookie } from 'lucide-react';
+import { Sun, Moon, SunMoon, Clover, FolderGit2, Settings2 } from 'lucide-react';
 import { RouterKey } from '@/types/global';
 import { FilterItem } from '@/types/search';
 import { useTheme } from '@/hooks/use-theme';
@@ -19,7 +19,7 @@ import { searchOpenAtom } from '@renderer/models/search';
 
 import { SearchPannel } from './SearchPannel';
 import { LocalStorageDialog } from './LocalStorageDialog';
-import { CookieDialog } from './CookieDialog';
+import { EnvDialog } from './EnvDialog';
 
 interface NavRightProps {
   className?: string;
@@ -32,7 +32,7 @@ export const NavRight = memo((props: NavRightProps) => {
   const [searchOpen, setSearchOpen] = useAtom(searchOpenAtom);
   const [candidates, setCadidates] = useState<FilterItem[] | null>(null);
   const [localStorageOpen, setLocalStorageOpen] = useState(false);
-  const [cookieOpen, setCookieOpen] = useState(false);
+  const [envOpen, setEnvOpen] = useState(false);
 
   const onRandom = useMemoizedFn(async () => {
     let list = candidates?.slice();
@@ -90,7 +90,7 @@ export const NavRight = memo((props: NavRightProps) => {
       />
 
       <LocalStorageDialog open={localStorageOpen} onOpenChange={setLocalStorageOpen} />
-      <CookieDialog open={cookieOpen} onOpenChange={setCookieOpen} />
+      <EnvDialog open={envOpen} onOpenChange={setEnvOpen} />
 
       <div
         className="flex px-3 py-1 mr-2 text-xs text-muted-foreground gap-8 items-center rounded-md bg-muted border-2 border-transparent hover:border-muted-foreground/30 cursor-pointer"
@@ -117,11 +117,14 @@ export const NavRight = memo((props: NavRightProps) => {
 
       <Tooltip>
         <TooltipTrigger className="rounded-md">
-          <div onClick={() => setCookieOpen((pre) => !pre)} className={clsx('p-2 hover:bg-muted rounded-md')}>
-            <Cookie size={17} />
+          <div
+            onClick={() => setEnvOpen((pre) => !pre)}
+            className={clsx('p-2 hover:bg-muted rounded-md')}
+          >
+            <Settings2 size={17} />
           </div>
         </TooltipTrigger>
-        <TooltipContent>设置 Cookie</TooltipContent>
+        <TooltipContent>设置环境变量</TooltipContent>
       </Tooltip>
 
       <Tooltip>

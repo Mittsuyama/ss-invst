@@ -2,6 +2,7 @@ import { request } from '@/lib/request';
 import { FilterColumn, FilterItem } from '@renderer/types/search';
 import { RequestType } from '@shared/types/request';
 import { StockInfo } from '@shared/types/stock';
+import { toast } from 'sonner';
 
 export const fetchStockInfo = async (id: string): Promise<StockInfo> => {
   const keyMap = {
@@ -86,6 +87,10 @@ export const fetchConditionStockList = async (
       keyWordNew: query,
     },
   );
+  if (res.code !== '100' && res.msg) {
+    toast.error(res.msg);
+    throw new Error(res.msg);
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const list = (res.data.result.dataList as any[]).map<FilterItem>((item) => {
     const keys = Object.keys(item);

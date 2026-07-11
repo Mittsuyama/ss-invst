@@ -238,17 +238,17 @@ export const Detail = memo((props: DetailProps) => {
           </div>
         ) : (
           chartType2PeriodTypes[chartType]?.map((p, index) => (
-          <div key={`${chartType}-${p}-${refreshCount}-${id}`} className="flex-1 overflow-hidden">
-            <Chart
-              multi={chartType2PeriodTypes[chartType].length > 1}
-              overlayVisible={overlayVisible}
-              id={id}
-              // defaultZoom={chartType2PeriodTypes[chartType].length > 1 ? 0.2 : 0.28}
-              period={p}
-              setCurrent={setCurrent}
-              autoSelectLast={index === chartType2PeriodTypes[chartType].length - 1}
-            />
-          </div>
+            <div key={`${chartType}-${p}-${refreshCount}-${id}`} className="flex-1 overflow-hidden">
+              <Chart
+                multi={chartType2PeriodTypes[chartType].length > 1}
+                overlayVisible={overlayVisible}
+                id={id}
+                // defaultZoom={chartType2PeriodTypes[chartType].length > 1 ? 0.2 : 0.28}
+                period={p}
+                setCurrent={setCurrent}
+                autoSelectLast={index === chartType2PeriodTypes[chartType].length - 1}
+              />
+            </div>
           ))
         )}
       </div>
