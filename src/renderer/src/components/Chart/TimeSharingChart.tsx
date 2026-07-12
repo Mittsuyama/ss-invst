@@ -21,11 +21,6 @@ interface TimeSharingChartProps {
   className?: string;
 }
 
-/** 区域高度占比 */
-const PRICE_RATIO = 0.5;
-const TURNOVER_RATIO = 0.15;
-const MACD_RATIO = 0.35;
-
 /** MACD 参数 */
 const MACD_SHORT = 12;
 const MACD_LONG = 26;
