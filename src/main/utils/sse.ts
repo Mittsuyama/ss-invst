@@ -4,12 +4,13 @@ import { RequestType } from '@shared/types/request';
 
 export const SSE_TICK_DETAILS_DATA_CHANNEL = 'sse-tick-details-data';
 
-let currentReq: ReturnType<typeof https.get> | null = null;
+const activeConnections = new Map<string, ReturnType<typeof https.get>>();
 
 function startSse(secid: string, cookie: string) {
-  if (currentReq) {
-    currentReq.destroy();
-    currentReq = null;
+  // 如果该 secid 已有连接，先销毁旧连接
+  const existing = activeConnections.get(secid);
+  if (existing) {
+    existing.destroy();
   }
 
   const params = new URLSearchParams({
@@ -34,7 +35,7 @@ function startSse(secid: string, cookie: string) {
     Cookie: cookie || '',
   };
 
-  currentReq = https.get(url, { headers }, (res) => {
+  const req = https.get(url, { headers }, (res) => {
     let buffer = '';
     res.on('data', (chunk) => {
       buffer += chunk.toString();
@@ -46,7 +47,7 @@ function startSse(secid: string, cookie: string) {
           try {
             const json = JSON.parse(dataLine.slice(6));
             for (const win of BrowserWindow.getAllWindows()) {
-              win.webContents.send(SSE_TICK_DETAILS_DATA_CHANNEL, json);
+              win.webContents.send(SSE_TICK_DETAILS_DATA_CHANNEL, { secid, data: json });
             }
           } catch {
             // ignore parse errors
@@ -54,17 +55,32 @@ function startSse(secid: string, cookie: string) {
         }
       }
     });
+
+    res.on('close', () => {
+      activeConnections.delete(secid);
+    });
   });
 
-  currentReq.on('error', (err) => {
-    console.error('SSE error:', err.message);
+  req.on('error', (err) => {
+    console.error(`SSE error [${secid}]:`, err.message);
+    activeConnections.delete(secid);
   });
+
+  activeConnections.set(secid, req);
 }
 
-function stopSse() {
-  if (currentReq) {
-    currentReq.destroy();
-    currentReq = null;
+function stopSse(secid?: string) {
+  if (secid) {
+    const req = activeConnections.get(secid);
+    if (req) {
+      req.destroy();
+      activeConnections.delete(secid);
+    }
+  } else {
+    for (const [, req] of activeConnections) {
+      req.destroy();
+    }
+    activeConnections.clear();
   }
 }
 
@@ -73,7 +89,7 @@ export const createSseIpc = () => {
     startSse(secid, cookie);
   });
 
-  ipcMain.on(RequestType.SSE_TICK_DETAILS_STOP, () => {
-    stopSse();
+  ipcMain.on(RequestType.SSE_TICK_DETAILS_STOP, (_event, secid?: string) => {
+    stopSse(secid);
   });
 };

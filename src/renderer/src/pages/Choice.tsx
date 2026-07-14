@@ -25,6 +25,7 @@ import {
 } from '@renderer/models/detail';
 import { FilterItem } from '@renderer/types/search';
 import { StockDetailDrawer } from '@/components/StockDetailDrawer';
+import { MiniTimeSharingChart } from '@/components/Chart/MiniTimeSharingChart';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { EditHoldDialog } from '@/components/EditHoldDialog';
@@ -315,7 +316,7 @@ export const Choice = memo(() => {
           </ButtonGroup>
         </div>
 
-        <div className="flex-1 overflow-auto border rounded-2xl px-4 py-3">
+        <div className="flex-1 overflow-auto border rounded-2xl px-4 py-1">
           {loading && records.length < 1 ? (
             <div className="space-y-2">
               {Array.from({ length: 8 }).map((_, index) => (
@@ -338,6 +339,7 @@ export const Choice = memo(() => {
                   <TableHead>名称</TableHead>
                   <TableHead>代码</TableHead>
                   <TableHead>最新价</TableHead>
+                  <TableHead>分时</TableHead>
                   <TableHead>
                     <div
                       className="h-full flex gap-1 items-center hover:bg-secondary cursor-default"
@@ -438,6 +440,11 @@ export const Choice = memo(() => {
                       </TableCell>
                       <TableCell>{record.code}</TableCell>
                       <TableCell>{numberCellRender(record.price)}</TableCell>
+                      <TableCell>
+                        <div className="h-[32px] -my-1">
+                          <MiniTimeSharingChart id={record.id} width={88} height={28} />
+                        </div>
+                      </TableCell>
                       <TableCell
                         className={clsx({
                           'text-red-500': !Number.isNaN(record.chg) && record.chg > 0,

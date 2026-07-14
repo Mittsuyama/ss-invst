@@ -58,7 +58,7 @@ export const TimeSharingChart = memo(({ id, setCurrent, className }: TimeSharing
     setPrePrice(undefined);
 
     startTickDetailsSse(id);
-    const off = onTickDetailsData((res) => {
+    const off = onTickDetailsData(id, (res) => {
       const { prePrice: pp, trends } = parseSseResponse(res);
       if (pp !== undefined) {
         prePriceRef.current = pp;
@@ -74,7 +74,7 @@ export const TimeSharingChart = memo(({ id, setCurrent, className }: TimeSharing
 
     return () => {
       off();
-      stopTickDetailsSse();
+      stopTickDetailsSse(id);
     };
   }, [id]);
 
