@@ -4,6 +4,7 @@ import { RequestType } from '@shared/types/request';
 import { envAtom } from '@/models/detail';
 
 export const SSE_TICK_DETAILS_DATA_CHANNEL = 'sse-tick-details-data';
+export const SSE_TICK_DETAILS_ERROR_CHANNEL = 'sse-tick-details-error';
 
 export interface TrendItem {
   timestamp: number;
@@ -55,7 +56,9 @@ export function parseSseResponse(res: SseTickDetailsResponse): {
 
 // ---- 回调注册表 ----
 type TickCallback = (res: SseTickDetailsResponse) => void;
+type TickErrorCallback = (message: string) => void;
 const callbacks = new Map<string, Set<TickCallback>>();
+const errorCallbacks = new Map<string, Set<TickErrorCallback>>();
 
 // ---- 订阅计数 (用于管理 SSE 连接生命周期) ----
 const subscriptionCount = new Map<string, number>();
@@ -74,6 +77,17 @@ function ensureGlobalListener() {
       const cbs = callbacks.get(secid);
       if (cbs) {
         cbs.forEach((cb) => cb(data));
+      }
+    },
+  );
+
+  window.electron.ipcRenderer.on(
+    SSE_TICK_DETAILS_ERROR_CHANNEL,
+    (_event, message: { secid: string; message: string }) => {
+      const { secid, message: errMsg } = message;
+      const cbs = errorCallbacks.get(secid);
+      if (cbs) {
+        cbs.forEach((cb) => cb(errMsg));
       }
     },
   );
@@ -115,6 +129,16 @@ export function stopTickDetailsSse(secid?: string) {
 }
 
 /**
+ * 重启指定 secid 的 SSE 连接（用于单只股票重试）。
+ * 会先停止再重新启动。
+ */
+export function restartTickDetailsSse(secid: string) {
+  window.electron.ipcRenderer.send(RequestType.SSE_TICK_DETAILS_STOP, secid);
+  const cookie = getDefaultStore().get(envAtom).cookie;
+  window.electron.ipcRenderer.send(RequestType.SSE_TICK_DETAILS_START, secid, cookie);
+}
+
+/**
  * 注册指定 secid 的 SSE 数据回调。
  * 返回一个取消订阅函数，调用后会自动清理。
  */
@@ -132,6 +156,29 @@ export function onTickDetailsData(secid: string, callback: TickCallback): () => 
       cbs.delete(callback);
       if (cbs.size === 0) {
         callbacks.delete(secid);
+      }
+    }
+  };
+}
+
+/**
+ * 注册指定 secid 的 SSE 错误回调。
+ * 返回一个取消订阅函数，调用后会自动清理。
+ */
+export function onTickDetailsError(secid: string, callback: TickErrorCallback): () => void {
+  ensureGlobalListener();
+
+  if (!errorCallbacks.has(secid)) {
+    errorCallbacks.set(secid, new Set());
+  }
+  errorCallbacks.get(secid)!.add(callback);
+
+  return () => {
+    const cbs = errorCallbacks.get(secid);
+    if (cbs) {
+      cbs.delete(callback);
+      if (cbs.size === 0) {
+        errorCallbacks.delete(secid);
       }
     }
   };

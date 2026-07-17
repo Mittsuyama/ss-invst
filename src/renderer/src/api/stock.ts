@@ -4,6 +4,74 @@ import { RequestType } from '@shared/types/request';
 import { StockInfo } from '@shared/types/stock';
 import { toast } from 'sonner';
 
+/** 全市场实时行情条目 */
+export interface MarketSpotItem {
+  /** 股票代码，如 "600000" */
+  code: string;
+  /** 股票名称 */
+  name: string;
+  /** 最新价 */
+  price: number;
+  /** 涨跌幅 (%) */
+  changeRate: number;
+  /** 涨跌额 */
+  change: number;
+  /** 成交量 (手) */
+  volume: number;
+  /** 成交额 */
+  amount: number;
+  /** 今开 */
+  open: number;
+  /** 最高 */
+  high: number;
+  /** 最低 */
+  low: number;
+  /** 昨收 */
+  preClose: number;
+  /** 换手率 (%) */
+  turnoverRate: number;
+  /** 市盈率(动) */
+  pe: number;
+  /** 总市值 */
+  marketCap: number;
+}
+
+/**
+ * 获取全市场 A 股实时行情
+ * @param sortBy 排序字段，默认按涨跌幅降序
+ */
+export const fetchAllMarketSpot = async (
+  sortBy: { field: string; desc?: boolean } = { field: 'f3', desc: true },
+): Promise<MarketSpotItem[]> => {
+  const res = await request(RequestType.GET, 'https://push2.eastmoney.com/api/qt/clist/get', {
+    fid: sortBy.field,
+    po: sortBy.desc ? 0 : 1,
+    pn: 1,
+    pz: 6000,
+    fs: 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23',
+    fields: 'f12,f14,f2,f3,f4,f5,f6,f8,f9,f15,f16,f17,f18,f20,f21',
+    fltt: 2,
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const diff = (res?.data?.diff ?? []) as any[];
+  return diff.map<MarketSpotItem>((item) => ({
+    code: item.f12,
+    name: item.f14,
+    price: item.f2,
+    changeRate: item.f3,
+    change: item.f4,
+    volume: item.f5,
+    amount: item.f6,
+    turnoverRate: item.f8,
+    pe: item.f9,
+    high: item.f15,
+    low: item.f16,
+    open: item.f17,
+    preClose: item.f18,
+    marketCap: item.f20,
+  }));
+};
+
 export const fetchStockInfo = async (id: string): Promise<StockInfo> => {
   const keyMap = {
     名称: 'f58',

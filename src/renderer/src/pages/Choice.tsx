@@ -11,12 +11,23 @@ import {
   EyeOff,
   Gem,
   FolderOpen,
+  Loader,
   Pencil,
   RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 import { GREEN_COLOR, RED_COLOR } from '@/lib/constants';
 import { buildConditionStockQuery } from '@/lib/condition-stock';
 import { fetchConditionStockList } from '@renderer/api/stock';
+import {
+  startTickDetailsSse,
+  stopTickDetailsSse,
+  restartTickDetailsSse,
+  onTickDetailsData,
+  onTickDetailsError,
+  parseSseResponse,
+  type TrendItem,
+} from '@/api/tick-details';
 import {
   favStockIdListAtom,
   holdQuantityAtom,
@@ -99,6 +110,11 @@ export const Choice = memo(() => {
   const [editingQuantityId, setEditingQuantityId] = useState<string | null>(null);
   const [holdQuantity, setHoldQuantity] = useAtom(holdQuantityAtom);
 
+  // 分时数据状态：每只股票的 trends / prePrice / 状态
+  const [trendsMap, setTrendsMap] = useState<Record<string, TrendItem[]>>({});
+  const [prePriceMap, setPrePriceMap] = useState<Record<string, number>>({});
+  const [tickStatus, setTickStatus] = useState<Record<string, 'loading' | 'ok' | 'error'>>({});
+
   const idList = useMemo(() => {
     switch (favoriteType) {
       case 'watch':
@@ -144,11 +160,94 @@ export const Choice = memo(() => {
     if (isEmpty) {
       return;
     }
-    const timer = window.setInterval(() => {
-      fetchRecords();
-    }, 60_000);
+    const timer = window.setInterval(
+      () => {
+        fetchRecords();
+      },
+      10 * 60 * 1000,
+    );
     return () => window.clearInterval(timer);
   }, [fetchRecords, isEmpty]);
+
+  // 统一管理所有股票的分时 SSE 订阅
+  useEffect(() => {
+    if (isEmpty) {
+      setTrendsMap({});
+      setPrePriceMap({});
+      setTickStatus({});
+      return;
+    }
+
+    // 清理不在当前列表中的旧数据
+    setTrendsMap((prev) => {
+      const next: Record<string, TrendItem[]> = {};
+      for (const id of idList) next[id] = prev[id] ?? [];
+      return next;
+    });
+    setPrePriceMap((prev) => {
+      const next: Record<string, number> = {};
+      for (const id of idList) if (id in prev) next[id] = prev[id];
+      return next;
+    });
+    setTickStatus((prev) => {
+      const next: Record<string, 'loading' | 'ok' | 'error'> = {};
+      for (const id of idList) next[id] = prev[id] ?? 'loading';
+      return next;
+    });
+
+    // 启动所有 SSE 订阅
+    const unsubs: Array<() => void> = [];
+    for (const id of idList) {
+      startTickDetailsSse(id);
+
+      const offData = onTickDetailsData(id, (res) => {
+        const { prePrice: pp, trends: newTrends } = parseSseResponse(res);
+        if (pp !== undefined) {
+          setPrePriceMap((prev) => (prev[id] === pp ? prev : { ...prev, [id]: pp }));
+        }
+        if (newTrends.length > 0) {
+          setTrendsMap((prev) => {
+            const existing = prev[id] ?? [];
+            const map = new Map(existing.map((t) => [t.timestamp, t]));
+            for (const t of newTrends) map.set(t.timestamp, t);
+            const merged = Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
+            return prev[id] === merged ? prev : { ...prev, [id]: merged };
+          });
+          setTickStatus((prev) => (prev[id] === 'ok' ? prev : { ...prev, [id]: 'ok' }));
+
+          // 反向更新 records 里的 price 和涨跌幅
+          const lastTrend = newTrends[newTrends.length - 1];
+          if (lastTrend && !Number.isNaN(lastTrend.close)) {
+            const pp = prePriceMap[id];
+            setRecords((prev) => {
+              const idx = prev.findIndex((r) => r.id === id);
+              if (idx < 0 || prev[idx].price === lastTrend.close) return prev;
+              const chg =
+                pp !== undefined && pp !== 0
+                  ? ((lastTrend.close - pp) / pp) * 100
+                  : prev[idx].chg;
+              const next = prev.slice();
+              next[idx] = { ...next[idx], price: lastTrend.close, chg };
+              return next;
+            });
+          }
+        }
+      });
+
+      const offError = onTickDetailsError(id, () => {
+        setTickStatus((prev) => (prev[id] === 'error' ? prev : { ...prev, [id]: 'error' }));
+      });
+
+      unsubs.push(offData, offError);
+    }
+
+    return () => {
+      unsubs.forEach((off) => off());
+      for (const id of idList) {
+        stopTickDetailsSse(id);
+      }
+    };
+  }, [idList, isEmpty]);
 
   const holdingSummary = useMemo(() => {
     let totalValue = 0;
@@ -253,6 +352,52 @@ export const Choice = memo(() => {
     setCurrent(sortedRecords[currentIndex + 1]);
   });
 
+  const onRetryTick = useMemoizedFn((id: string) => {
+    setTickStatus((prev) => ({ ...prev, [id]: 'loading' }));
+    restartTickDetailsSse(id);
+  });
+
+  const errorTickIds = useMemo(
+    () => Object.entries(tickStatus).filter(([, s]) => s === 'error').map(([id]) => id),
+    [tickStatus],
+  );
+
+  const onRetryAllTicks = useMemoizedFn(() => {
+    if (errorTickIds.length === 0) return;
+    setTickStatus((prev) => {
+      const next = { ...prev };
+      for (const id of errorTickIds) next[id] = 'loading';
+      return next;
+    });
+    for (const id of errorTickIds) restartTickDetailsSse(id);
+  });
+
+  const miniChartRender = (record: FilterItem) => {
+    const status = tickStatus[record.id];
+    if (status === 'loading') {
+      return <Loader className="size-4 animate-spin text-muted-foreground" />;
+    }
+    if (status === 'error') {
+      return (
+        <RefreshCw
+          className="size-4 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+          onClick={() => onRetryTick(record.id)}
+        />
+      );
+    }
+    return (
+      <div className="h-[32px] -my-1">
+        <MiniTimeSharingChart
+          id={record.id}
+          width={88}
+          height={28}
+          trends={trendsMap[record.id]}
+          prePrice={prePriceMap[record.id]}
+        />
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="h-full px-4 pb-4 flex flex-col">
@@ -300,6 +445,16 @@ export const Choice = memo(() => {
             <Button size="sm" variant="outline" onClick={() => fetchRecords()}>
               <RotateCcw className={clsx(loading && 'animate-spin')} />
               刷新
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onRetryAllTicks}
+              disabled={errorTickIds.length === 0}
+            >
+              <RefreshCw />
+              重试分时
+              {errorTickIds.length > 0 && ` (${errorTickIds.length})`}
             </Button>
             <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil />
@@ -440,11 +595,7 @@ export const Choice = memo(() => {
                       </TableCell>
                       <TableCell>{record.code}</TableCell>
                       <TableCell>{numberCellRender(record.price)}</TableCell>
-                      <TableCell>
-                        <div className="h-[32px] -my-1">
-                          <MiniTimeSharingChart id={record.id} width={88} height={28} />
-                        </div>
-                      </TableCell>
+                      <TableCell>{miniChartRender(record)}</TableCell>
                       <TableCell
                         className={clsx({
                           'text-red-500': !Number.isNaN(record.chg) && record.chg > 0,

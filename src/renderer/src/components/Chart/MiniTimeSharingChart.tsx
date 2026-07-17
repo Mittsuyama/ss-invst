@@ -1,13 +1,7 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useMemo, useRef } from 'react';
 import dayjs from 'dayjs';
 import { RED_COLOR, GREEN_COLOR } from '@/lib/constants';
-import {
-  startTickDetailsSse,
-  stopTickDetailsSse,
-  onTickDetailsData,
-  parseSseResponse,
-  type TrendItem,
-} from '@/api/tick-details';
+import { type TrendItem } from '@/api/tick-details';
 
 interface MiniTimeSharingChartProps {
   /** 股票 secid（例如 "1.000001"） */
@@ -17,6 +11,10 @@ interface MiniTimeSharingChartProps {
   /** SVG 视口高度（默认 32） */
   height?: number;
   className?: string;
+  /** 外部传入的分时数据，若提供则不再自行请求 SSE */
+  trends?: TrendItem[];
+  /** 昨收价，配合 trends 使用 */
+  prePrice?: number;
 }
 
 /** 6 位代码的股票，交易时间 9:30–15:00，横轴按实际时间映射 */
@@ -191,44 +189,16 @@ function buildAreaPath(points: SvgPoint[], height: number): string {
 }
 
 export const MiniTimeSharingChart = memo(
-  ({ id, width = 100, height = 32, className }: MiniTimeSharingChartProps) => {
-    const [trends, setTrends] = useState<TrendItem[]>([]);
-    const prePriceRef = useRef<number | undefined>(undefined);
-    const [version, setVersion] = useState(0);
+  ({ id, width = 100, height = 32, className, trends: externalTrends, prePrice }: MiniTimeSharingChartProps) => {
+    const prePriceRef = useRef<number | undefined>(prePrice);
+    if (prePrice !== undefined) {
+      prePriceRef.current = prePrice;
+    }
 
     const isSixDigit = SIX_DIGIT_RE.test(id);
-
-    useEffect(() => {
-      setTrends([]);
-      prePriceRef.current = undefined;
-      setVersion(0);
-
-      startTickDetailsSse(id);
-      const off = onTickDetailsData(id, (res) => {
-        const { prePrice: pp, trends: newTrends } = parseSseResponse(res);
-        if (pp !== undefined) {
-          prePriceRef.current = pp;
-        }
-        if (newTrends.length > 0) {
-          setTrends((prev) => {
-            const map = new Map(prev.map((t) => [t.timestamp, t]));
-            for (const t of newTrends) {
-              map.set(t.timestamp, t);
-            }
-            return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
-          });
-          setVersion((v) => v + 1);
-        }
-      });
-
-      return () => {
-        off();
-        stopTickDetailsSse(id);
-      };
-    }, [id]);
+    const trends = externalTrends ?? [];
 
     const { linePath, areaPath, lineColor, gradientId, preCloseY } = useMemo(() => {
-      void version;
       const pp = prePriceRef.current;
 
       if (trends.length === 0) {
@@ -258,7 +228,7 @@ export const MiniTimeSharingChart = memo(
         gradientId: gradId,
         preCloseY: pcY,
       };
-    }, [trends, version, width, height, id, isSixDigit]);
+    }, [trends, width, height, id, isSixDigit, prePrice]);
 
     const isEmpty = trends.length === 0;
 

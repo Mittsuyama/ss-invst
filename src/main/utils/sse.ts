@@ -3,6 +3,7 @@ import https from 'https';
 import { RequestType } from '@shared/types/request';
 
 export const SSE_TICK_DETAILS_DATA_CHANNEL = 'sse-tick-details-data';
+export const SSE_TICK_DETAILS_ERROR_CHANNEL = 'sse-tick-details-error';
 
 const activeConnections = new Map<string, ReturnType<typeof https.get>>();
 
@@ -36,6 +37,20 @@ function startSse(secid: string, cookie: string) {
   };
 
   const req = https.get(url, { headers }, (res) => {
+    const isHttpError = res.statusCode !== undefined && res.statusCode >= 400;
+    if (isHttpError) {
+      const err = new Error(`HTTP ${res.statusCode}`);
+      console.error(`SSE http error [${secid}]:`, err.message);
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send(SSE_TICK_DETAILS_ERROR_CHANNEL, { secid, message: err.message });
+      }
+      res.on('error', (streamErr) => {
+        console.error(`SSE http-error stream error [${secid}]:`, streamErr.message);
+      });
+      res.resume();
+      return;
+    }
+
     let buffer = '';
     res.on('data', (chunk) => {
       buffer += chunk.toString();
@@ -56,14 +71,24 @@ function startSse(secid: string, cookie: string) {
       }
     });
 
+    res.on('error', (err) => {
+      console.error(`SSE stream error [${secid}]:`, err.message);
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send(SSE_TICK_DETAILS_ERROR_CHANNEL, { secid, message: err.message });
+      }
+    });
+
     res.on('close', () => {
       activeConnections.delete(secid);
     });
   });
 
   req.on('error', (err) => {
-    console.error(`SSE error [${secid}]:`, err.message);
+    console.error(`SSE request error [${secid}]:`, err.message);
     activeConnections.delete(secid);
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send(SSE_TICK_DETAILS_ERROR_CHANNEL, { secid, message: err.message });
+    }
   });
 
   activeConnections.set(secid, req);
