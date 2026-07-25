@@ -102,3 +102,11 @@ export const holdQuantityAtom = atomWithStorage<Record<string, number>>(
     getOnInit: true,
   },
 );
+export const showFundamentalAtom = atomWithStorage<boolean>(
+  'show-fundamental',
+  false,
+  undefined,
+  {
+    getOnInit: true,
+  },
+);

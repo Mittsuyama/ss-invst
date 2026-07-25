@@ -11,6 +11,8 @@ import {
   Maximize,
   Minimize,
   Plus,
+  ChartPie,
+  LineChart,
 } from 'lucide-react';
 import { ChartType, PriceAndVolumeItem } from '@shared/types/stock';
 import { chartType2PeriodTypes, chartTypeTittle } from '@/lib/constants';
@@ -21,6 +23,7 @@ import {
   watchStockIdListAtom,
   qualityStockIdListAtom,
   detailFullScreenAtom,
+  showFundamentalAtom,
 } from '@/models/detail';
 import { fetchStockInfo } from '@/api/stock';
 import {
@@ -32,6 +35,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
+import { RouterKey } from '@/types/global';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +46,7 @@ import { useLatestRequest } from '@/hooks/use-latest-request';
 
 import { Chart } from './Chart';
 import { TimeSharingChart } from './Chart/TimeSharingChart';
+import { FundamentalDetail } from './finance';
 
 interface DetailProps {
   id: string;
@@ -61,6 +66,10 @@ export const Detail = memo((props: DetailProps) => {
   const [chartType, setChartType] = useAtom(chartTypeAtom);
   const [current, setCurrent] = useState<PriceAndVolumeItem | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
+  const [showFundamental, setShowFundamental] = useAtom(showFundamentalAtom);
+
+  // 基本面仅支持 A 股（id 格式: 1.xxxxxx 或 0.xxxxxx，6位数字代码）
+  const isAShare = /^[01]\.\d{6}$/.test(id);
 
   const { data: info } = useLatestRequest(() => fetchStockInfo(id), [id]);
 
@@ -181,10 +190,37 @@ export const Detail = memo((props: DetailProps) => {
               <RotateCcw />
               刷新
             </Button>
+            {sidebar && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => history.push(RouterKey.CHOICE_OVERVIEW.replace(':id', id))}
+              >
+                <ChartPie />
+                详情
+              </Button>
+            )}
             {!sidebar && (
-              <Button size="sm" variant="outline" onClick={() => setFullScreen((pre) => !pre)}>
+              <Button
+                style={{ borderRightWidth: 0 }}
+                size="sm"
+                variant="outline"
+                onClick={() => setFullScreen((pre) => !pre)}
+              >
                 {fullScreen ? <Minimize /> : <Maximize />}
                 全屏
+              </Button>
+            )}
+            {isAShare && (
+              <Button
+                style={{ borderLeftWidth: 1 }}
+                size="sm"
+                variant="outline"
+                onClick={() => setShowFundamental((pre) => !pre)}
+                className={clsx(showFundamental && 'text-primary border-primary')}
+              >
+                <LineChart />
+                基本面
               </Button>
             )}
             <Button
@@ -232,7 +268,11 @@ export const Detail = memo((props: DetailProps) => {
         </div>
       </div>
       <div className="flex-1 flex overflow-hidden gap-6 pb-6">
-        {chartType === ChartType.TIME_SHARING ? (
+        {showFundamental && isAShare ? (
+          <div className="flex-1 overflow-hidden">
+            <FundamentalDetail stockId={id} />
+          </div>
+        ) : chartType === ChartType.TIME_SHARING ? (
           <div className="flex-1 overflow-hidden">
             <TimeSharingChart id={id} setCurrent={setCurrent} />
           </div>

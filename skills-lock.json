@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "vchart-development-assistant": {
+      "source": "VisActor/VChart",
+      "sourceType": "github",
+      "skillPath": "skills/vchart-development-assistant/SKILL.md",
+      "computedHash": "efe04e61650fa0601de922fefda60a03a7ea35fda04cbcb4507d5669550feb76"
+    }
+  }
+}

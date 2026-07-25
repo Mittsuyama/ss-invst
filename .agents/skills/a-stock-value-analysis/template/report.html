@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{stockName}} - 价值投资分析报告 ({{year}})</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1a1a2e;
+      --muted: #6c757d;
+      --accent: #0d6efd;
+      --danger: #dc3545;
+      --success: #198754;
+      --warning: #ffc107;
+      --border: #dee2e6;
+      --card-bg: #f8f9fa;
+      --table-stripe: #f8f9fa;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a2e;
+        --fg: #e0e0e0;
+        --muted: #adb5bd;
+        --accent: #4dabf7;
+        --danger: #ff6b6b;
+        --success: #51cf66;
+        --warning: #ffd43b;
+        --border: #343a40;
+        --card-bg: #252535;
+        --table-stripe: #252535;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.7;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.8rem; margin-bottom: 0.5rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; }
+    h2 { font-size: 1.4rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--accent); }
+    h3 { font-size: 1.2rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+    h4 { font-size: 1.05rem; margin-top: 1.2rem; margin-bottom: 0.6rem; color: var(--muted); }
+    p { margin-bottom: 0.8rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      display: block;
+      overflow-x: auto;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th { background: var(--card-bg); font-weight: 600; }
+    tr:nth-child(even) td { background: var(--table-stripe); }
+
+    /* 摘要卡片 */
+    .summary-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .summary-card h3 { margin-top: 0; }
+    .risk-list { list-style: none; }
+    .risk-list li {
+      padding: 0.4rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    .risk-list li::before {
+      content: "\26A0";
+      position: absolute;
+      left: 0;
+      color: var(--danger);
+    }
+    .opportunity-list { list-style: none; }
+    .opportunity-list li {
+      padding: 0.4rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    .opportunity-list li::before {
+      content: "\2713";
+      position: absolute;
+      left: 0;
+      color: var(--success);
+      font-weight: bold;
+    }
+    .danger { color: var(--danger); font-weight: 600; }
+    .success { color: var(--success); font-weight: 600; }
+    .warning { color: var(--warning); font-weight: 600; }
+
+    /* 导航 */
+    .nav {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      margin: 1.5rem 0;
+      position: sticky;
+      top: 1rem;
+      z-index: 100;
+    }
+    .nav ul { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+    .nav a { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+    .nav a:hover { text-decoration: underline; }
+
+    /* 柱状图 */
+    .chart-container {
+      margin: 1rem 0;
+    }
+    .chart-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+    .chart-legend {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.8rem;
+    }
+    .legend-item { display: flex; align-items: center; gap: 0.3rem; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 1rem;
+      height: 200px;
+      padding: 1rem 0;
+      border-bottom: 2px solid var(--border);
+    }
+    .bar-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar-group-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 100%;
+      justify-content: center;
+    }
+    .bar {
+      width: 28px;
+      border-radius: 3px 3px 0 0;
+      position: relative;
+      min-height: 2px;
+    }
+    .bar-value {
+      position: absolute;
+      top: -1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .bar-label {
+      font-size: 0.75rem;
+      opacity: 0.8;
+      margin-top: 0.3rem;
+    }
+
+    .report-meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+    .section { scroll-margin-top: 5rem; }
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      table { font-size: 0.8rem; }
+      .bar { width: 20px; }
+      .bar-chart { gap: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1>{{stockName}} - 价值投资分析报告</h1>
+  <div class="report-meta">
+    报告年份：{{year}} | 生成时间：{{generatedAt}} | 数据来源：Tushare + 年报PDF
+  </div>
+
+  <!-- 摘要区域 -->
+  <div class="summary-card">
+    <h3>重点摘要</h3>
+    <p>以下为本报告需要重点关注的信息：</p>
+
+    <h4 style="color: var(--danger);">危险信号</h4>
+    <ul class="risk-list">
+      {{risks}}
+    </ul>
+
+    <h4 style="color: var(--success);">机会信号</h4>
+    <ul class="opportunity-list">
+      {{opportunities}}
+    </ul>
+  </div>
+
+  <!-- 重点图表区域 -->
+  <div class="summary-card">
+    <h3>重点图表</h3>
+    {{charts}}
+  </div>
+
+  <!-- 目录导航 -->
+  <nav class="nav">
+    <ul>
+      <li><a href="#basic">基本信息</a></li>
+      <li><a href="#business">主营业务</a></li>
+      <li><a href="#market">市场财务信息</a></li>
+      <li><a href="#cashflow">现金流分析</a></li>
+      <li><a href="#debt">负债分析</a></li>
+      <li><a href="#receivable">应收账款</a></li>
+      <li><a href="#inventory">存货</a></li>
+      <li><a href="#fixed">固定资产</a></li>
+      <li><a href="#investment">投资</a></li>
+      <li><a href="#equity">净资产</a></li>
+      <li><a href="#revenue">营业收入</a></li>
+      <li><a href="#expense">费用</a></li>
+    </ul>
+  </nav>
+
+  <!-- 正文区域 -->
+  <div class="section" id="basic">
+    {{bodyContent}}
+  </div>
+
+  <script>
+    // 为导航锚点自动注入 section id
+    document.addEventListener('DOMContentLoaded', function() {
+      var navLinks = document.querySelectorAll('.nav a[href^="#"]');
+      var sections = document.querySelectorAll('.section h2, .section h1');
+      var idMap = {
+        '基本信息': 'basic', '主营业务': 'business', '市场财务信息': 'market',
+        '现金流分析': 'cashflow', '负债分析': 'debt', '应收账款': 'receivable',
+        '存货': 'inventory', '固定资产': 'fixed', '投资': 'investment',
+        '净资产': 'equity', '营业收入': 'revenue', '费用': 'expense'
+      };
+      sections.forEach(function(h) {
+        var text = h.textContent.trim();
+        for (var key in idMap) {
+          if (text === key || text.indexOf(key) === 0) {
+            if (!document.getElementById(idMap[key])) {
+              h.parentElement.id = idMap[key];
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

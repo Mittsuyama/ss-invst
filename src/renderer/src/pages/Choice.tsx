@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
@@ -115,6 +115,12 @@ export const Choice = memo(() => {
   const [prePriceMap, setPrePriceMap] = useState<Record<string, number>>({});
   const [tickStatus, setTickStatus] = useState<Record<string, 'loading' | 'ok' | 'error'>>({});
 
+  // 用 ref 同步 prePriceMap 的最新值，避免 SSE 回调闭包捕获到过期的 prePriceMap
+  const prePriceMapRef = useRef(prePriceMap);
+  useEffect(() => {
+    prePriceMapRef.current = prePriceMap;
+  });
+
   const idList = useMemo(() => {
     switch (favoriteType) {
       case 'watch':
@@ -218,17 +224,18 @@ export const Choice = memo(() => {
           // 反向更新 records 里的 price 和涨跌幅
           const lastTrend = newTrends[newTrends.length - 1];
           if (lastTrend && !Number.isNaN(lastTrend.close)) {
-            const pp = prePriceMap[id];
+            // 优先用本次 SSE 推上来的 prePrice，其次回退到 ref 里的最新值
+            const basePrice = pp ?? prePriceMapRef.current[id];
             setRecords((prev) => {
               const idx = prev.findIndex((r) => r.id === id);
               if (idx < 0 || prev[idx].price === lastTrend.close) return prev;
               const chg =
-                pp !== undefined && pp !== 0
-                  ? ((lastTrend.close - pp) / pp) * 100
+                basePrice !== undefined && basePrice !== 0
+                  ? ((lastTrend.close - basePrice) / basePrice) * 100
                   : prev[idx].chg;
               const next = prev.slice();
               next[idx] = { ...next[idx], price: lastTrend.close, chg };
-              return next;
+              return [...next];
             });
           }
         }
@@ -358,7 +365,10 @@ export const Choice = memo(() => {
   });
 
   const errorTickIds = useMemo(
-    () => Object.entries(tickStatus).filter(([, s]) => s === 'error').map(([id]) => id),
+    () =>
+      Object.entries(tickStatus)
+        .filter(([, s]) => s === 'error')
+        .map(([id]) => id),
     [tickStatus],
   );
 
