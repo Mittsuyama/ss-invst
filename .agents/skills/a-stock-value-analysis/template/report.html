@@ -97,6 +97,19 @@
       color: var(--success);
       font-weight: bold;
     }
+    .attention-list { list-style: none; }
+    .attention-list li {
+      padding: 0.4rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    .attention-list li::before {
+      content: "!";
+      position: absolute;
+      left: 0;
+      color: var(--warning);
+      font-weight: bold;
+    }
     .danger { color: var(--danger); font-weight: 600; }
     .success { color: var(--success); font-weight: 600; }
     .warning { color: var(--warning); font-weight: 600; }
@@ -212,6 +225,11 @@
     <h4 style="color: var(--success);">机会信号</h4>
     <ul class="opportunity-list">
       {{opportunities}}
+    </ul>
+
+    <h4 style="color: var(--warning);">关注事项</h4>
+    <ul class="attention-list">
+      {{attentions}}
     </ul>
   </div>
 

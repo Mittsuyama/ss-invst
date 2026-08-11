@@ -22,6 +22,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { StockDetailDrawer } from '@/components/StockDetailDrawer';
 import { fetchConditionStockList } from '@renderer/api/stock';
 import { FilterColumn, FilterItem } from '@renderer/types/search';
@@ -31,20 +38,29 @@ const COLUMN_ORDER = [
   '^SECURITY_SHORT_NAME',
   '^SECURITY_CODE',
   '^INDUSTRY',
-  '^KDJ_J',
-  '^NEWEST_PRICE',
-  '^CHG',
+  // } 结尾过滤掉 ROET...DATE 列，返回的是更新日期
+  '^ROET.*\}$',
   '^PETTMDEDUCTED',
   // '^ROE_WEIGHT{.+}$',
   '^PB',
   '^TOAL_MARKET_VALUE',
+  '^KDJ_J',
+  '^NEWEST_PRICE',
+  '^CHG',
   '^TRADING_VOLUMES',
   '^TURNOVER_RATE',
 ];
 
-// const CONDITION =
-//   '市盈率TTM(扣非)大于等于0倍小于等于30倍;净资产收益率ROE(加权)>10%;日线周期KDJ(J值)<30;上市时间>2年;总市值>50亿;行业';
-const CONDITION = '市盈率TTM(扣非);日线周期KDJ(J值)<5;总市值>50亿;上市时间>2年;行业';
+const CONDITIONS = [
+  {
+    label: '短线机会',
+    value: '市盈率TTM(扣非);ROE(TTM);日线周期KDJ(J值)<5;总市值>50亿;上市时间>2年;行业',
+  },
+  {
+    label: '长线筛选',
+    value: '市盈率TTM(扣非)<30;ROE(TTM)>15;PB;上市时间>3年;行业',
+  },
+] as const;
 
 export const Filter = memo(() => {
   const [loading, setLoading] = useState(false);
@@ -52,6 +68,7 @@ export const Filter = memo(() => {
     pageSize: 100,
     page: 1,
   });
+  const [condition, setCondition] = useState<string>(CONDITIONS[0].value);
   const [total, setTotal] = useState(0);
   const [columns, setColumns] = useState<FilterColumn[]>([]);
   const [records, setRecords] = useState<FilterItem[]>([]);
@@ -68,7 +85,7 @@ export const Filter = memo(() => {
     try {
       const lastIndex = records.findIndex((item) => item.id === current?.id);
       setLoading(true);
-      const { list, total, columns } = await fetchConditionStockList(CONDITION, {
+      const { list, total, columns } = await fetchConditionStockList(condition, {
         page,
         pageSize,
       });
@@ -165,7 +182,7 @@ export const Filter = memo(() => {
 
   useEffect(() => {
     fetch(pagination.page, pagination.pageSize);
-  }, [pagination, fetch]);
+  }, [pagination, fetch, condition]);
 
   const paginationItemRender = (page: number) => (
     <PaginationItem key={page}>
@@ -200,8 +217,26 @@ export const Filter = memo(() => {
       >
         <div className="space mb-2 flex-none">
           <div className="font-bold mr-4">条件选股</div>
-          <div className="text-sm text-muted-foreground pl-1">{CONDITION}</div>
-          <div className="ml-auto">
+          <div className="text-sm text-muted-foreground pl-1">{condition}</div>
+          <div className="ml-auto flex items-center gap-2">
+            <Select
+              value={condition}
+              onValueChange={(value) => {
+                setCondition(value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
+            >
+              <SelectTrigger size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONDITIONS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               size="sm"
               onClick={() => fetch(pagination.page, pagination.pageSize)}
@@ -250,7 +285,11 @@ export const Filter = memo(() => {
                   <TableRow key={record.id}>
                     {columns.map((col) => {
                       if (!['SECURITY_SHORT_NAME'].includes(col.key)) {
-                        return <TableCell key={col.key}>{record[col.key]}</TableCell>;
+                        let value = record[col.key];
+                        if (/[0-9.-]+\|[0-9]{4}/.test(value)) {
+                          value = value.split('|')[0];
+                        }
+                        return <TableCell key={col.key}>{value}</TableCell>;
                       }
                       return (
                         <TableCell key={`${record.id}-${col.key}`}>

@@ -17,6 +17,7 @@ A股价值投资分析报告生成脚本
 import argparse
 import re
 import os
+import sys
 import json
 from datetime import datetime
 
@@ -215,7 +216,24 @@ def extract_charts_from_md(md_content: str, tables: list) -> str:
                 [{'name': 'ROE', 'color': '#ff6384', 'values': roe_values}],
             )
 
-    # 3. 现金流走势
+    # 3. ROCE 趋势
+    roce_table = find_table(tables, ['ROCE'])
+    if roce_table:
+        roce_row = None
+        for row in roce_table['rows']:
+            if row and 'ROCE' in row[0]:
+                roce_row = row
+                break
+        if roce_row:
+            years_labels = [str(h) for h in roce_table['headers'][1:]]
+            roce_values = [extract_numeric(v) for v in roce_row[1:]]
+            charts_html += generate_bar_chart(
+                'ROCE 趋势（%）',
+                years_labels,
+                [{'name': 'ROCE', 'color': '#ffd43b', 'values': roce_values}],
+            )
+
+    # 4. 现金流走势
     # 找到同时包含经营、投资、筹资三个行的表格
     cashflow_table = None
     for t in tables:
@@ -264,15 +282,19 @@ def extract_charts_from_md(md_content: str, tables: list) -> str:
 # ============================================================
 
 def parse_summary(md_content: str) -> dict:
-    """解析 Markdown 报告，提取危险信号和机会信号"""
+    """解析 Markdown 报告，提取危险、机会和关注事项"""
     risks = []
     opportunities = []
+    attentions = []
 
-    risk_keywords = ['异常', '风险', '下降', '减少', '不足', '高息', '借短投长',
-                     '造假', '冲销', '变更', '显失公平', '微亏', '大亏', '转资产',
-                     '承压', '恶化', '警惕', '负面']
+    risk_keywords = ['异常', '风险', '不足', '高息', '借短投长', '造假', '显失公平',
+                     '微亏', '大亏', '转资产', '承压', '恶化', '警惕', '负面',
+                     '大幅下降', '大幅减少', '减值', '坏账', '诉讼']
     opportunity_keywords = ['增长', '提升', '改善', '优势', '稳定', '健康', '充足',
                             '创新高', '领先', '龙头', '突破']
+    attention_keywords = ['关注', '重要', '主因', '主要', '变化', '变更', '波动',
+                          '结构', '集中度', '分红', '融资', '投资', '关联交易',
+                          '海外', '一次性', '下降', '减少', '影响']
 
     lines = md_content.split('\n')
     for line in lines:
@@ -287,19 +309,21 @@ def parse_summary(md_content: str) -> dict:
         if not text:
             continue
 
-        for kw in risk_keywords:
-            if kw in text and text not in risks:
-                risks.append(text)
-                break
-        else:
-            for kw in opportunity_keywords:
-                if kw in text and text not in opportunities:
-                    opportunities.append(text)
-                    break
+        risk_hit = any(kw in text for kw in risk_keywords)
+        opportunity_hit = any(kw in text for kw in opportunity_keywords)
+        attention_hit = any(kw in text for kw in attention_keywords)
+
+        if risk_hit and text not in risks:
+            risks.append(text)
+        elif opportunity_hit and not attention_hit and text not in opportunities:
+            opportunities.append(text)
+        elif attention_hit and text not in attentions:
+            attentions.append(text)
 
     return {
         'risks': risks[:8],
         'opportunities': opportunities[:8],
+        'attentions': attentions[:8],
     }
 
 
@@ -426,6 +450,7 @@ def generate_html(stock_name: str, year: str, md_content: str, template_path: st
 
     risks_html = '\n      '.join(f'<li>{strip_md(r)}</li>' for r in parsed['risks'])
     opportunities_html = '\n      '.join(f'<li>{strip_md(o)}</li>' for o in parsed['opportunities'])
+    attentions_html = '\n      '.join(f'<li>{strip_md(a)}</li>' for a in parsed['attentions'])
     body_html = md_to_html(md_content)
 
     html = template.replace('{{stockName}}', stock_name)
@@ -433,6 +458,7 @@ def generate_html(stock_name: str, year: str, md_content: str, template_path: st
     html = html.replace('{{generatedAt}}', datetime.now().strftime('%Y-%m-%d %H:%M'))
     html = html.replace('{{risks}}', risks_html or '<li>无明显危险信号</li>')
     html = html.replace('{{opportunities}}', opportunities_html or '<li>暂未发现明显机会</li>')
+    html = html.replace('{{attentions}}', attentions_html or '<li>暂无特别关注事项</li>')
     html = html.replace('{{charts}}', charts_html)
     html = html.replace('{{bodyContent}}', body_html)
 
@@ -461,7 +487,7 @@ def main():
     if not os.path.exists(md_path):
         print(f'错误: Markdown 报告不存在: {md_path}')
         print('请先生成 Markdown 报告。')
-        return
+        sys.exit(1)
 
     with open(md_path, 'r', encoding='utf-8') as f:
         md_content = f.read()
