@@ -410,7 +410,7 @@ export const Choice = memo(() => {
 
   return (
     <>
-      <div className="h-full px-4 pb-4 flex flex-col">
+      <div className="h-full px-4 pb-4 pt-2 flex flex-col">
         <div className="flex-none flex items-center gap-3 mb-3 mt-1">
           <div className="font-bold text-base">收藏夹</div>
           <Select

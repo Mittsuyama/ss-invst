@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>投资 Agent 技术方案详解</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --ink: #1c2230;
+    --muted: #5b6472;
+    --line: #e4e7ec;
+    --accent: #2f6fed;
+    --accent-soft: #eaf1fe;
+    --code-bg: #0f1420;
+    --code-ink: #d8dee9;
+    --ok: #1a9d5c;
+    --warn: #c77a00;
+    --danger: #cf3f4f;
+    --mono: "SFMono-Regular", "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  /* ---- Sidebar ---- */
+  .sidebar {
+    width: 300px;
+    flex: 0 0 300px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: #101725;
+    color: #c7cfdd;
+    padding: 28px 20px 40px;
+    border-right: 1px solid #1e2939;
+  }
+  .sidebar h1 {
+    font-size: 16px;
+    color: #fff;
+    margin: 0 0 4px;
+    line-height: 1.4;
+  }
+  .sidebar .sub {
+    font-size: 12px;
+    color: #7c8797;
+    margin-bottom: 22px;
+  }
+  .sidebar nav a {
+    display: block;
+    color: #aab4c4;
+    text-decoration: none;
+    font-size: 13.5px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border-left: 2px solid transparent;
+    transition: background .15s, color .15s;
+  }
+  .sidebar nav a:hover { background: #1a2233; color: #fff; }
+  .sidebar nav a.active {
+    background: #1a2233;
+    color: #7fb0ff;
+    border-left-color: var(--accent);
+  }
+  .sidebar nav a.l2 { padding-left: 24px; font-size: 12.5px; color: #8b95a6; }
+
+  /* ---- Main ---- */
+  .main { flex: 1; max-width: 980px; padding: 48px 56px 120px; margin: 0 auto; }
+  h2 {
+    font-size: 26px;
+    margin: 64px 0 14px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    letter-spacing: .3px;
+  }
+  h2:first-child { border-top: none; margin-top: 0; }
+  h3 { font-size: 19px; margin: 36px 0 10px; }
+  h4 { font-size: 16px; margin: 26px 0 8px; }
+  p { margin: 10px 0; color: #2a3140; }
+  a { color: var(--accent); }
+  .lead { font-size: 16.5px; color: #3a4356; }
+  .muted { color: var(--muted); font-size: 13.5px; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: #eef1f6;
+    color: #0f3b7a;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 16px 18px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 14px 0;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: 13px; }
+  pre .c { color: #6a7a90; }
+  pre .k { color: #7fb0ff; }
+  pre .s { color: #9ecb83; }
+  pre .f { color: #e0a86f; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 13.5px;
+    background: var(--panel);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(16,24,40,.05);
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th { background: #f0f3f8; color: #3a4356; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: 12.5px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 16px 0;
+  }
+  .card.warn { border-left: 4px solid var(--warn); background: #fffaf0; }
+  .card.info { border-left: 4px solid var(--accent); background: #f6faff; }
+  .card.tip { border-left: 4px solid var(--ok); background: #f2fbf6; }
+
+  /* ---- Diagrams ---- */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .node {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    min-width: 110px;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(16,24,40,.05);
+  }
+  .node .t { font-weight: 600; }
+  .node .d { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .node.accent { border-color: var(--accent); background: var(--accent-soft); }
+  .node.core { border-color: #0f3b7a; background: #0f1420; color: #d8dee9; }
+  .node.core .d { color: #7c8797; }
+  .arr {
+    align-self: center;
+    color: #8b95a6;
+    font-weight: 600;
+    font-size: 18px;
+    padding: 0 2px;
+  }
+  .vstack { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+  .varr { align-self: center; color: #8b95a6; font-weight: 700; font-size: 16px; }
+
+  .seq { margin: 16px 0; font-family: var(--mono); font-size: 13px; }
+  .seq .line {
+    display: flex;
+    gap: 10px;
+    padding: 6px 10px;
+    border-left: 3px solid var(--line);
+    margin-left: 12px;
+  }
+  .seq .who { color: #7c8797; flex: 0 0 150px; text-align: right; }
+  .seq .what { color: #0f3b7a; }
+  .seq .line.llm { border-left-color: #b085ff; }
+  .seq .line.tool { border-left-color: var(--accent); }
+  .seq .line.io { border-left-color: var(--ok); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 860px) {
+    .sidebar { display: none; }
+    .main { padding: 28px 20px 80px; }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    margin-right: 4px;
+  }
+  .tag.g { background: #eaf7ef; color: var(--ok); }
+  .tag.o { background: #fdf1e7; color: var(--warn); }
+  ul, ol { margin: 8px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <h1>投资 Agent<br>技术方案详解</h1>
+    <div class="sub">ss-invst · 桌面端 A 股投研智能体</div>
+    <nav id="toc">
+      <a href="#overview">一、总体概览</a>
+      <a href="#stack">技术栈</a>
+      <a href="#process">二、进程模型与整体架构</a>
+      <a href="#modules">三、模块拆分</a>
+      <a href="#composition">四、模块如何组合</a>
+      <a href="#details">五、模块细节</a>
+      <a href="#pi" class="l2">5.1 ESM 懒加载</a>
+      <a href="#model" class="l2">5.2 Model 构建</a>
+      <a href="#agentcore" class="l2">5.3 Agent 核心</a>
+      <a href="#tools" class="l2">5.4 工具层</a>
+      <a href="#data" class="l2">5.5 数据层</a>
+      <a href="#factors" class="l2">5.6 因子层</a>
+      <a href="#skill" class="l2">5.7 Skill 层</a>
+      <a href="#session" class="l2">5.8 会话层</a>
+      <a href="#compaction" class="l2">5.9 上下文压缩</a>
+      <a href="#sysprompt" class="l2">5.10 系统提示</a>
+      <a href="#loop">六、Agent Loop 实现</a>
+      <a href="#planloop">七、计划-执行-校验循环</a>
+      <a href="#events">八、事件系统</a>
+      <a href="#skillsystem">九、运行时 Skill 系统</a>
+      <a href="#files">十、文件管理</a>
+      <a href="#toollist">十一、工具清单</a>
+      <a href="#extend">十二、扩展点</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+
+    <h2 id="overview">一、总体概览</h2>
+    <p class="lead">
+      这是一个跑在 <strong>Electron 桌面端</strong>里的 A 股投资分析智能体。它以
+      <code>@earendil-works/pi-agent-core</code> 的 <code>Agent</code> 为「大脑」（负责 LLM 流式调用、
+      工具编排、上下文管理），以 <code>@earendil-works/pi-ai</code> 为模型/流式底座，
+      外面包了一层自己写的「投资专用骨架」——把真实数据源（东方财富、Tushare）、确定性因子计算与回测、
+      运行时 Skill 技能包、会话持久化、计划-执行-校验循环，全部接到这个大脑上。
+    </p>
+    <p>
+      核心设计原则只有三条：
+    </p>
+    <ul>
+      <li><strong>确定性能力下沉给代码，不交给 LLM 算</strong>：K 线指标、因子信号、回测、PDF 下载/解析都是 TS 代码，LLM 只负责「决定调用哪个工具、传什么参数、如何解读结果」。</li>
+      <li><strong>短系统提示 + 渐进披露</strong>：主 system prompt 只有十几行；细节知识装进运行时 Skill，按需通过 <code>use_skill</code> 注入，压缩/切上下文时也不怕丢。</li>
+      <li><strong>可恢复的循环</strong>：意图记在 <code>task.md</code>、步骤光标记在 <code>todo.md</code>，两者都落盘，即使上下文被压缩也能用 <code>read_todo</code> 恢复进度。</li>
+    </ul>
+
+    <h2 id="stack">技术栈</h2>
+    <table>
+      <thead><tr><th>层</th><th>技术</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td>桌面壳</td><td>Electron 37 + electron-vite 4（Vite 7）</td><td>主进程 / preload / 渲染进程三端构建与打包</td></tr>
+        <tr><td>UI</td><td>React 19 + TypeScript + Tailwind 4 + shadcn 风格组件 + jotai</td><td>聊天界面、左右面板、状态管理</td></tr>
+        <tr><td>Agent 大脑</td><td><code>@earendil-works/pi-agent-core@0.74.2</code></td><td>Agent 循环、工具编排、上下文压缩 API</td></tr>
+        <tr><td>模型/流式</td><td><code>@earendil-works/pi-ai@0.74.2</code>（<code>streamSimple</code>、<code>Type</code>=TypeBox）</td><td>LLM 流式调用、工具参数 schema</td></tr>
+        <tr><td>PDF</td><td><code>pdfjs-dist</code> + <code>markdown-it</code></td><td>财报 PDF 提文字、报告 Markdown 渲染</td></tr>
+        <tr><td>数据源</td><td>东方财富公开接口、Tushare（token 可选）</td><td>行情 / 财务 / 主营 / 分红 / 研报 PDF</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="process">二、进程模型与整体架构</h2>
+    <p>
+      Electron 三端各司其职，<strong>Agent 全部跑在主进程</strong>，渲染进程只负责 UI 与状态展示，
+      两端通过 <code>ipcMain.handle</code> / <code>contextBridge</code> + 一个事件通道通信。
+      共享类型放在 <code>src/shared</code>，避免两端协议漂移。
+    </p>
+    <div class="flow">
+      <div class="node accent"><div class="t">渲染进程（React）</div><div class="d">Agent 页 / 聊天 / 文件 / 待办 / 调试</div></div>
+      <div class="arr">⇄</div>
+      <div class="node"><div class="t">Preload</div><div class="d">contextBridge 暴露 window.api</div></div>
+      <div class="arr">⇄ IPC</div>
+      <div class="node core"><div class="t">主进程（Agent 宿主）</div><div class="d">agent.ts · tools/ · data/ · factors/ · skill/ · session/</div></div>
+      <div class="arr">→</div>
+      <div class="node"><div class="t">pi-agent-core / pi-ai</div><div class="d">Agent 循环 + LLM 流式</div></div>
+    </div>
+    <div class="flow">
+      <div class="node"><div class="t">磁盘：resources/skills/</div><div class="d">运行时技能包</div></div>
+      <div class="arr">← 读</div>
+      <div class="node core"><div class="t">主进程</div><div class="d">skill-registry 扫描加载</div></div>
+      <div class="arr">⇄ 读写</div>
+      <div class="node"><div class="t">磁盘：workspace/.ss-invst/sessions/</div><div class="d">会话 + 文件 + task.md + todo.md</div></div>
+    </div>
+    <div class="card info">
+      <strong>为什么 Agent 放主进程？</strong> 工具需要访问文件系统（读 PDF、跑 Node 脚本、下载文件）、
+      打开系统对话框、调用 <code>shell.openPath</code> 等 Node 能力，这些只有主进程权限最干净。
+      渲染进程通过 IPC 提交提问，再通过事件通道接收流式增量，逐字渲染。
+    </div>
+
+    <h2 id="modules">三、模块拆分</h2>
+    <p>主进程的 Agent 部分按「职责单一」拆成 7 个目录，每个目录只做一件事：</p>
+<pre><code>src/main/agent/
+├── agent.ts            # Agent 单例 + IPC 注册 + 事件桥 + applySkill
+├── pi.ts               # pi 包（ESM-only）动态 import 懒加载
+├── models.ts           # LLM 配置 → pi-ai Model 对象
+├── system-prompt.ts    # 短系统提示（十几行）
+├── compaction.ts       # 内存级上下文压缩兜底
+├── tools/              # 21 个工具（每个工具一个文件）
+│   ├── index.ts        #   组装所有工具 + 注入 ctx（emit / applySkill）
+│   ├── common.ts       #   ok() 结果包装、PiType 类型
+│   └── *.ts            #   各工具：schema + execute
+├── factors/            # 因子定义（纯函数）+ 事件驱动回测
+│   ├── index.ts        #   FACTORS 注册表（macd_cross 等）
+│   └── backtest.ts     #   evaluateSignals（胜率/赔率/盈亏）
+├── data/               # 数据源与 IO
+│   ├── eastmoney.ts    #   行情/财务/主营/分红/研报PDF
+│   ├── tushare.ts      #   Tushare 通用查询
+│   ├── download.ts     #   URL → Buffer
+│   ├── files.ts        #   读文件（PDF 提文字 / 文本）
+│   ├── indicators.ts   #   MA/BOLL 等技术指标
+│   └── field-labels.ts #   字段中文化
+├── skill/              # 运行时 skill 注册表
+│   ├── skill-paths.ts  #   dev/prod 的 skill 根目录
+│   └── skill-registry.ts # 扫描 frontmatter + 加载 SKILL.md
+└── session/            # 会话持久化
+    ├── session-store.ts   # 目录/meta/jsonl/task/todo/文件
+    └── session-runtime.ts # 当前会话内存态（workspacePath/sessionId/currentSkill）</code></pre>
+    <p class="muted">配套：<code>src/shared/src/types/agent.ts</code>（IPC 协议与事件 union）、
+    <code>src/renderer/</code>（UI）、<code>resources/skills/</code>（技能包）。</p>
+
+    <h2 id="composition">四、模块如何组合（一次提问的完整数据流）</h2>
+    <p>下面按时间顺序，看一次「分析贵州茅台」从点击发送到看到回复，经过哪些模块：</p>
+    <div class="seq">
+      <div class="line"><span class="who">渲染进程</span><span class="what">AgentChat 组装 payload（text + attachments + config + skill）→ invoke('agent:prompt')</span></div>
+      <div class="line"><span class="who">主进程 IPC</span><span class="what">handler 收到 payload → ensureAgent() 原子初始化 → 校验 API Key</span></div>
+      <div class="line"><span class="who">主进程 agent</span><span class="what">runtime.cookie / tushareToken 写入；buildModel() 设 model；applySkill() 设 system prompt；getApiKey 钩子</span></div>
+      <div class="line llm"><span class="who">pi-agent-core</span><span class="what">a.prompt(text) → 内部循环：LLM 流式返回文本 / 工具调用</span></div>
+      <div class="line tool"><span class="who">工具执行</span><span class="what">toolExecution:'parallel' 并行跑工具 → 工具内部调 data/ 层拉数据或 factors/ 计算</span></div>
+      <div class="line io"><span class="who">数据/磁盘</span><span class="what">东方财富 / Tushare 接口；read_file 读 PDF；save_file 写 output/</span></div>
+      <div class="line"><span class="who">事件桥</span><span class="what">a.subscribe 把每个中间态翻译成 AgentEvent → emit() 推给渲染进程</span></div>
+      <div class="line"><span class="who">渲染进程</span><span class="what">AgentChat 逐字渲染文本 / 折叠工具调用 / 文件卡片</span></div>
+      <div class="line"><span class="who">主进程 agent</span><span class="what">agent_end → persistCurrentSession() 增量写 messages.jsonl</span></div>
+    </div>
+
+    <h2 id="details">五、模块细节</h2>
+
+    <h3 id="pi">5.1 ESM 懒加载（pi.ts）</h3>
+    <p>
+      本项目主进程是 <strong>CommonJS</strong>，而 pi 系列包是 <strong>ESM-only</strong>，
+      不能直接 <code>require</code>。因此用动态 <code>import()</code> 懒加载并缓存，
+      所有用到 pi 的地方（<code>agent.ts</code>、<code>tools/index.ts</code>）都先 <code>await loadPi()</code>。
+    </p>
+<pre><code><span class="c">// pi.ts —— ESM-only 包在 CJS 主进程里只能动态 import</span>
+export async function loadPi() {
+  if (!ai)  ai  = await import('@earendil-works/pi-ai');
+  if (!core) core = await import('@earendil-works/pi-agent-core');
+  return { ai, core };
+}</code></pre>
+
+    <h3 id="model">5.2 Model 构建（models.ts）</h3>
+    <p>
+      <code>buildModel(config)</code> 把用户在设置里填的 provider/model/apiKey 映射成 pi-ai 的
+      <code>Model</code> 对象。关键点：<strong>deepseek 与 custom 都走 OpenAI 兼容协议</strong>
+      （<code>api:'openai-completions'</code>），openai 走官方 v1 接口，anthropic 走
+      <code>anthropic-messages</code>。每个 Model 都声明 <code>contextWindow</code>（deepseek/openai/custom 128k，
+      anthropic 200k），这是后面上下文压缩判断窗口上限的依据。
+    </p>
+
+    <h3 id="agentcore">5.3 Agent 核心（agent.ts）</h3>
+    <p>这是整个系统的枢纽，负责四件事：<strong>单例化 Agent、订阅事件并翻译成 UI 事件、注入运行时配置、注册 IPC</strong>。</p>
+    <h4>原子化单例</h4>
+    <p>
+      曾经有个卡死 bug：首次打开或点击历史记录时，<code>if (!agent)</code> 之后连续多个 <code>await</code>，
+      并发调用会各建一个 Agent、各订阅一次，导致重复订阅卡死。现在用「在途 Promise」原子化：
+    </p>
+<pre><code>let agentPromise: Promise&lt;AgentInstance&gt; | null = null;
+async function ensureAgent() {
+  if (agent) return agent;
+  if (!agentPromise) {
+    agentPromise = createAgent().catch(err =&gt; { agentPromise = null; throw err; });
+  }
+  return agentPromise;
+}</code></pre>
+    <h4>创建 Agent 与订阅</h4>
+<pre><code>const a = new core.Agent({
+  initialState: { systemPrompt, model, tools },
+  streamFn: ai.streamSimple,       // 流式底座
+  toolExecution: 'parallel',       // 工具并行执行
+});
+
+<span class="c">// 上下文压缩兜底：接近窗口上限时压缩早期历史（见 5.9）</span>
+a.transformContext = (messages, signal) =&gt; compactContext(messages, {...});
+
+<span class="c">// 把 Agent 内部事件翻译成发给 UI 的 AgentEvent</span>
+a.subscribe(async (event) =&gt; {
+  switch (event.type) {
+    case 'agent_start':  emit({type:'run_start'}); break;
+    case 'message_update': <span class="c">/* text_delta / thinking_delta → 逐字 */</span> break;
+    case 'tool_execution_start': emit({type:'tool_start', ...}); break;
+    case 'tool_execution_end':   emit({type:'tool_end', ...}); break;
+    case 'agent_end': await persistCurrentSession(); emit({type:'run_end'}); break;
+  }
+});</code></pre>
+    <h4>applySkill（技能注入）</h4>
+    <p>
+      <code>use_skill</code> 工具（自动路由）和 <code>payload.skill</code>（手动路由）共用
+      <code>applySkill(name)</code>：加载 SKILL.md 全文，拼到主 prompt 后面一个<strong>独立段</strong>，并持久化到
+      <code>meta.currentSkill</code>、推送 <code>skill_applied</code> 事件。切 skill 只替换这一段，主 prompt 保持短。
+    </p>
+<pre><code>function buildSystemPromptWithSkill(markdown: string): string {
+  return `${SYSTEM_PROMPT}\n\n## 当前技能（skill）\n\n${markdown}`;
+}</code></pre>
+
+    <h3 id="tools">5.4 工具层（tools/）</h3>
+    <p>
+      每个工具一个文件，导出 <code>createXxxTool(Type, ...deps)</code>，返回
+      <code>AgentTool { name, label, description, parameters, execute }</code>。
+      <code>parameters</code> 用 TypeBox 的 <code>Type</code> 声明 JSON Schema（给 LLM 看参数约束），
+      <code>execute</code> 是真正跑代码的地方。所有工具统一由 <code>createTools(ctx)</code> 组装，
+      <code>ctx</code> 注入两样运行时依赖：
+    </p>
+    <ul>
+      <li><code>emit(event)</code> —— 把工具产出（<code>todo_update</code>/<code>decision_update</code>/<code>file_saved</code>）推给 UI；</li>
+      <li><code>applySkill(name)</code> —— 供 <code>use_skill</code> 工具调用。</li>
+    </ul>
+    <p>工具结果约定：<code>execute</code> 返回 <code>ok(text, details)</code>，<code>ok()</code> 把它包成
+    <code>{ content:[{type:'text', text}], details }</code>——<code>text</code> 是给 LLM 读的摘要，
+    <code>details</code> 是结构化数据（如信号列表）。以因子工具为例：</p>
+<pre><code>execute: async (_id, p) =&gt; {
+  const def = FACTORS[args.factor];
+  if (!def) throw new Error(`未知因子 ${args.factor}`);
+  const { rows } = await getKlines(args.secid, args.period ?? 'day', args.limit ?? 250);
+  const signals = def.fn(bars, args.params ?? {});
+  return ok(
+    { factor, buyCount, sellCount },   <span class="c">// text：LLM 看的摘要</span>
+    { factor, signals },               <span class="c">// details：完整结构化结果</span>
+  );
+}</code></pre>
+    <p>全套 21 个工具及分组见<a href="#toollist">第十一节</a>。</p>
+
+    <h3 id="data">5.5 数据层（data/）</h3>
+    <p>
+      与外部世界打交道的地方，全部是确定性代码。核心 <code>eastmoney.ts</code> 封装东方财富公开接口，
+      字段已中文化（<code>field-labels.ts</code> 提供映射），返回给 LLM 前先「翻译」成中文键，减少 LLM 误读。
+      <code>download.ts</code> 负责 URL→Buffer（下载研报 PDF），<code>files.ts</code> 负责读文件
+      （PDF 用 pdfjs-dist 提文字、文本直读），<code>indicators.ts</code> 提供 MA/BOLL 等纯计算。
+      <code>tushare.ts</code> 是可选的补充数据通道（带 token 才启用）。
+    </p>
+    <p>研报 PDF 是最近加的能力，两段式：</p>
+    <ol>
+      <li><code>getReportPdfs(secid)</code> 拉研报列表（年份/报告类型/意见类型/发布状态，<code>published = PUBLISH_SITUATIONS 以 'AN' 开头</code>）；</li>
+      <li><code>getReportPdfUrl(publishSituations)</code> 用 <code>art_code</code> 换 PDF 直链 <code>attach_url</code>。</li>
+    </ol>
+
+    <h3 id="factors">5.6 因子层（factors/）</h3>
+    <p>
+      因子是「确定性信号 + 确定性回测」的典型代表，LLM 只选因子、传参数，<strong>不参与计算</strong>。
+      <code>index.ts</code> 里每个因子是一个纯函数 <code>fn(bars, params) → FactorSignal[]</code>，
+      统一注册到 <code>FACTORS</code>：
+    </p>
+    <table>
+      <thead><tr><th>因子</th><th>说明</th><th>参数（默认）</th></tr></thead>
+      <tbody>
+        <tr><td><code>macd_cross</code></td><td>MACD 金叉/死叉</td><td>fast=12, slow=26, signal=9</td></tr>
+        <tr><td><code>ma_cross</code></td><td>双均线金叉/死叉</td><td>short=5, long=20</td></tr>
+        <tr><td><code>rsi_reversal</code></td><td>RSI 超买超卖反转</td><td>period=14, oversold=30, overbought=70</td></tr>
+        <tr><td><code>boll_breakout</code></td><td>布林带突破</td><td>period=20, mult=2</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <code>backtest.ts</code> 的 <code>evaluateSignals()</code> 是事件驱动回测：每个 buy 信号买入，
+      到下一个 sell 信号（或持有 <code>holdBars</code> 根）卖出，输出
+      <strong>胜率、赔率（profit factor）、平均盈亏、逐笔明细</strong>。这保证「因子有没有效」是可复现的，而非 LLM 的主观判断。
+    </p>
+
+    <h3 id="skill">5.7 Skill 层（skill/）</h3>
+    <p>
+      <code>skill-registry.ts</code> 扫描 <code>resources/skills/</code> 下每个子目录的 <code>SKILL.md</code>，
+      用<strong>极简 frontmatter 解析</strong>只取 <code>name/description/params</code> 做索引（供
+      <code>list_skills</code> 与 UI 下拉），解析失败就跳过该 skill，绝不拖垮启动。
+      <code>loadSkill(name)</code> 再按需读回 SKILL.md 全文并缓存。
+      <code>skill-paths.ts</code> 处理 dev/prod 路径差异（dev 用仓库 <code>resources/skills</code>，
+      prod 用 electron-builder <code>extraResources</code> 复制到 <code>process.resourcesPath/skills</code>）。
+    </p>
+
+    <h3 id="session">5.8 会话层（session/）</h3>
+    <p>会话是「workspace 文件夹 + 其下一个隐藏目录」的自包含形态：</p>
+<pre><code>&lt;workspace&gt;/.ss-invst/sessions/&lt;id&gt;/
+├── meta.json          # id/title/messageCount/updatedAt/currentSkill
+├── messages.jsonl     # 消息追加写（每行一条 JSON）
+├── task.md            # 目标 + 决策日志
+├── todo.md            # 步骤光标（- [ ]/[~]/[x]）
+├── uploads/           # 用户上传 + 下载的文件
+├── files/             # save_file 默认产物
+├── intermediate/      # skill 中间产物
+└── output/            # skill 最终报告</code></pre>
+    <p>
+      <code>saveSession()</code> 是<strong>增量追加</strong>：只把 <code>savedMessageCount</code> 之后的新消息
+      append 进 jsonl（内存里 <code>agent.state.messages</code> 才是全量）。meta 用
+      <code>writeJsonAtomic</code>（先写 <code>.tmp</code> 再 <code>rename</code>）防止写一半损坏。
+      <code>session-runtime.ts</code> 只存三个内存态字段，供工具（save_file/read_file/run_script）取当前会话路径。
+    </p>
+
+    <h3 id="compaction">5.9 上下文压缩（compaction.ts）</h3>
+    <p>
+      这是「内存级压缩兜底」：只在上下文<strong>接近模型窗口上限</strong>时触发，不主动、不常驻。
+      关键设计是——<strong>只压缩喂给 LLM 的那份，磁盘历史全量保留</strong>。
+    </p>
+    <ol>
+      <li><code>estimateContextTokens</code> + <code>shouldCompact</code> 判断是否超预算（预留 4096 输出、保留最近约 12000 token）；</li>
+      <li><code>findCutPoint</code> 从后往前找最近的 user 消息作干净切点，不把一轮对话拦腰截断；</li>
+      <li>早期消息 <code>generateSummary</code> 压成一段<strong>投资定制摘要</strong>（重点保留股票代码/财务指标/结论/风险），拼成 <code>[历史摘要, ...最近消息]</code>；</li>
+      <li>摘要失败则退化为「直接截断保留最近」。</li>
+    </ol>
+    <div class="card tip">
+      因为 <code>task.md</code>（意图+决策）和 <code>todo.md</code>（步骤光标）都在磁盘上，
+      即使早期对话被压成摘要，agent 也能用 <code>read_todo</code> / <code>read_task</code> 恢复进度——
+      这正是「压缩可恢复」的底气所在。
+    </div>
+
+    <h3 id="sysprompt">5.10 系统提示（system-prompt.ts）</h3>
+    <p>刻意保持极短，只有四块：工作方式（用 skill / 走循环）、报告要求、免责声明、循环骨架一行：</p>
+<pre><code>复杂多步任务循环：decide 记决策 → 执行 → 校验结果 → update_todo 推进 / 失败 refine 重试</code></pre>
+
+    <h2 id="loop">六、Agent Loop 实现</h2>
+    <p>
+      循环本身由 <code>pi-agent-core</code> 提供，我们不重写，而是<strong>通过 <code>subscribe</code> 观察它、
+      通过 <code>transformContext</code> 在喂给 LLM 前拦截它、通过 <code>getApiKey</code> 供应凭据</strong>。
+      一次 <code>a.prompt(text)</code> 触发的内部节奏如下：
+    </p>
+    <div class="flow">
+      <div class="node"><div class="t">prompt(text)</div><div class="d">用户提问入队</div></div>
+      <div class="arr">→</div>
+      <div class="node"><div class="t">transformContext</div><div class="d">必要时压缩历史</div></div>
+      <div class="arr">→</div>
+      <div class="node core"><div class="t">LLM 流式</div><div class="d">streamSimple</div></div>
+      <div class="arr">→</div>
+      <div class="node"><div class="t">产出文本 / 工具调用</div><div class="d">并行执行工具</div></div>
+      <div class="arr">↺</div>
+      <div class="node accent"><div class="t">工具结果回填</div><div class="d">继续下一轮直到完成</div></div>
+    </div>
+    <p>对应的控制面（IPC 暴露给渲染进程）：</p>
+    <table>
+      <thead><tr><th>能力</th><th>方法</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>提问</td><td><code>a.prompt(text)</code></td><td>流式跑一整轮（可能含多轮工具调用）</td></tr>
+        <tr><td>中止</td><td><code>a.abort()</code></td><td>停止当前流；若在跑会先 abort 再 <code>waitForIdle()</code></td></tr>
+        <tr><td>重置</td><td><code>a.reset()</code></td><td>清空消息，用于新建/切换会话</td></tr>
+        <tr><td>恢复历史</td><td><code>a.state.messages = snap.messages</code></td><td>加载会话时把磁盘消息塞回内存</td></tr>
+        <tr><td>凭据</td><td><code>a.getApiKey</code></td><td>运行时供应 LLM API Key</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="planloop">七、计划-执行-校验循环</h2>
+    <p>
+      这是本项目的灵魂，对应你最初设想的
+      「skill → task → todo → decision → execute → lint → 循环」。当前实现是<strong>软循环</strong>：
+      由 system prompt + skill 约定驱动，靠 agent 自觉执行，不硬性拦截。
+      <code>verify.js</code> 字段已预留，未来「硬循环」会强制跑校验脚本。
+    </p>
+    <p>循环靠两个落盘文件 + 三个工具实现：</p>
+    <div class="grid2">
+      <div class="card">
+        <strong>task.md —— 意图不可变 + 决策日志</strong>
+        <p class="muted">目标段可覆盖，决策日志只追加。关键选择用 <code>decide(decision, reason?)</code>
+        记下「为什么这么选」，压缩后也能恢复脉络。</p>
+      </div>
+      <div class="card">
+        <strong>todo.md —— 步骤光标</strong>
+        <p class="muted"><code>update_todo(todos)</code> 整体重写 <code>- [ ]/[~]/[x]</code>，
+        标当前步/剩余步；上下文丢失时 <code>read_todo</code> 恢复。</p>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="node"><div class="t">decide</div><div class="d">记决策到 task.md</div></div>
+      <div class="arr">→</div>
+      <div class="node"><div class="t">执行</div><div class="d">调用数据/因子工具</div></div>
+      <div class="arr">→</div>
+      <div class="node"><div class="t">校验</div><div class="d">接口空/非零退出/数据缺失？</div></div>
+      <div class="arr">OK</div>
+      <div class="node accent"><div class="t">update_todo</div><div class="d">推进下一步</div></div>
+      <div class="arr">Fail ↺</div>
+      <div class="node"><div class="t">refine</div><div class="d">read_todo 恢复 → 重试/换方案</div></div>
+    </div>
+    <div class="card warn">
+      <strong>软循环 vs 硬循环</strong>：软循环靠 prompt 约束，灵活但可能「自我宣布完成而不校验」；
+      硬循环会在每步后强制跑确定性校验（脚本非零退出 = 失败，自动 refine），由引擎拦截。
+      当前先落软循环，<code>verify.js</code> 作为硬循环的钩子保留。
+    </div>
+
+    <h2 id="events">八、事件系统</h2>
+    <p>
+      主进程把 Agent 内部事件翻译成一个 <code>AgentEvent</code> union，通过单一通道
+      <code>agent:event</code> 推给渲染进程。渲染进程只认这 14 种事件，不感知 pi 内部结构：
+    </p>
+    <table>
+      <thead><tr><th>事件</th><th>含义</th><th>UI 表现</th></tr></thead>
+      <tbody>
+        <tr><td><code>run_start</code> / <code>run_end</code></td><td>一轮开始/结束</td><td>停止按钮态</td></tr>
+        <tr><td><code>assistant_message_start/end</code></td><td>助手消息气泡边界</td><td>新建/收尾气泡</td></tr>
+        <tr><td><code>assistant_text_delta</code></td><td>正文逐字增量</td><td>Markdown 渲染 + 折叠工具</td></tr>
+        <tr><td><code>assistant_thinking_delta</code></td><td>思考逐字增量</td><td>折叠的思考区</td></tr>
+        <tr><td><code>tool_start</code>/<code>tool_update</code>/<code>tool_end</code></td><td>工具生命周期</td><td>工具卡片（展开/折叠、参数摘要）</td></tr>
+        <tr><td><code>todo_update</code></td><td>任务清单变化</td><td>「待办」标签页</td></tr>
+        <tr><td><code>decision_update</code></td><td>新增决策</td><td>「调试」标签页</td></tr>
+        <tr><td><code>skill_applied</code></td><td>技能选定/清空</td><td>当前技能徽标</td></tr>
+        <tr><td><code>file_saved</code></td><td>保存/下载了文件</td><td>对话底部文件卡片</td></tr>
+        <tr><td><code>error</code></td><td>LLM/工具错误</td><td>错误气泡</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="skillsystem">九、运行时 Skill 系统（扩展机制）</h2>
+    <p>
+      这是把「某套投资流程」封装成可复用技能包的机制。分两层别混淆：
+      <strong>开发期 skill</strong>（<code>.agents/skills/</code>，给写这个 app 的编码 agent 用）与
+      <strong>运行时 skill</strong>（<code>resources/skills/</code>，给投资 agent 用）。
+      这里讲的是运行时这一层。
+    </p>
+    <h4>一个 skill 的目录结构</h4>
+<pre><code>resources/skills/&lt;name&gt;/
+├── SKILL.md        # 入口：frontmatter + 阶段大纲（保持短）
+├── references/     # 按需 read_file 的知识（字段清单/检查表）
+├── templates/      # report.md / report.html 模板
+├── scripts/        # 可执行 Node 脚本（.mjs/.cjs，经 run_script 跑、不读源码）
+└── verify.js       # 确定性验收脚本（预留，硬循环用）</code></pre>
+    <h4>frontmatter（决定路由）</h4>
+<pre><code>---
+name: value-investing
+description: 长线价值投资分析……（含触发词，用于自动路由）
+params:            # 可选，仅文档化
+  - key: stock_code
+    desc: 股票代码，如 600519
+verify: verify.js  # 可选，预留
+---</code></pre>
+    <h4>两种路由</h4>
+    <ul>
+      <li><strong>自动路由</strong>：LLM 根据 <code>description</code> 触发词自行 <code>list_skills</code> → <code>use_skill</code>；</li>
+      <li><strong>手动路由</strong>：用户在输入框左侧下拉选 skill，随 <code>payload.skill</code> 传进主进程。</li>
+    </ul>
+    <p>
+      <code>use_skill</code> 的效果是<strong>把 SKILL.md 全文注入 system prompt 的独立段</strong>（不是塞进消息历史），
+      这样 compaction 不会把它截掉，且切 skill 只替换这一段。当前内置 4 个：
+      <code>value-investing</code>、<code>technical-signal</code>、<code>factor-research</code>、<code>financial-report-analysis</code>。
+    </p>
+
+    <h2 id="files">十、文件管理（input / intermediate / output）</h2>
+    <p>会话内四类文件各归其位，skill 约定「中间产物进 <code>intermediate/</code>、最终报告进 <code>output/</code>」：</p>
+    <table>
+      <thead><tr><th>目录</th><th>语义</th><th>写入方式</th></tr></thead>
+      <tbody>
+        <tr><td><code>uploads/</code></td><td>用户上传 + 下载</td><td>自动（pickFiles / download_url / download_report_pdf）</td></tr>
+        <tr><td><code>files/</code></td><td>通用生成</td><td><code>save_file</code> 默认 dir</td></tr>
+        <tr><td><code>intermediate/</code></td><td>skill 中间产物</td><td><code>save_file(dir='intermediate')</code></td></tr>
+        <tr><td><code>output/</code></td><td>skill 最终报告</td><td><code>save_file(dir='output')</code></td></tr>
+      </tbody>
+    </table>
+    <p><code>read_file</code> 的三路径解析顺序：<strong>绝对路径 &gt; skill 相对路径 &gt; 会话相对路径</strong>。
+    <code>run_script</code> 用 <code>utilityProcess.fork</code> 在<strong>会话目录</strong>下跑 Node 脚本，
+    参数走数组（不拼 shell），<strong>非零退出码 = 失败</strong>，agent 据此 refine。</p>
+
+    <h2 id="toollist">十一、工具清单（21 个）</h2>
+    <table>
+      <thead><tr><th>分组</th><th>工具</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3"><strong>编排/循环</strong></td><td><code>update_todo</code></td><td>整体重写 todo.md，标记当前步</td></tr>
+        <tr><td><code>read_todo</code></td><td>读回 todo.md（压缩后恢复进度）</td></tr>
+        <tr><td><code>decide</code></td><td>追加决策到 task.md</td></tr>
+        <tr><td rowspan="2"><strong>skill 路由</strong></td><td><code>list_skills</code></td><td>列出可用 skill</td></tr>
+        <tr><td><code>use_skill</code></td><td>选定当前 skill（注入 SKILL.md）</td></tr>
+        <tr><td rowspan="4"><strong>文件/脚本</strong></td><td><code>read_file</code></td><td>读 PDF（提文字）/文本等</td></tr>
+        <tr><td><code>save_file</code></td><td>保存文本到会话目录</td></tr>
+        <tr><td><code>run_script</code></td><td>Node 脚本执行（cwd=会话目录）</td></tr>
+        <tr><td><code>download_url</code></td><td>下载文件到 uploads/</td></tr>
+        <tr><td rowspan="7"><strong>行情/财务数据</strong></td><td><code>search_stock</code></td><td>名称/代码/拼音 → secid</td></tr>
+        <tr><td><code>get_quote</code></td><td>行情 + 估值快照</td></tr>
+        <tr><td><code>get_klines</code></td><td>K 线 + MA/MACD/KDJ/RSI/BOLL</td></tr>
+        <tr><td><code>get_financial_statements</code></td><td>三大报表 + 领先指标</td></tr>
+        <tr><td><code>get_business</code></td><td>主营构成</td></tr>
+        <tr><td><code>get_dividends</code></td><td>分红送股历史</td></tr>
+        <tr><td><code>tushare_query</code></td><td>Tushare 通用补充数据</td></tr>
+        <tr><td rowspan="2"><strong>研报 PDF</strong></td><td><code>list_report_pdfs</code></td><td>列研报 PDF 列表</td></tr>
+        <tr><td><code>download_report_pdf</code></td><td>按需下载对应 PDF 到 uploads/</td></tr>
+        <tr><td rowspan="2"><strong>因子</strong></td><td><code>compute_factor</code></td><td>拉 K 线算买卖信号</td></tr>
+        <tr><td><code>analyze_factor</code></td><td>信号回测：胜率/赔率/盈亏</td></tr>
+        <tr><td><strong>网络</strong></td><td><code>web_search</code></td><td>DuckDuckGo 网页搜索</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="extend">十二、扩展点</h2>
+    <p>想给 agent 加能力，三条路清晰分离：</p>
+    <div class="grid2">
+      <div class="card">
+        <strong>加一个「流程」→ 写 skill</strong>
+        <p class="muted">在 <code>resources/skills/</code> 加目录 + <code>SKILL.md</code>（frontmatter + 阶段大纲），
+        细节下沉 references/，可执行逻辑放 scripts/。自动被 <code>list_skills</code> 发现。</p>
+      </div>
+      <div class="card">
+        <strong>加一个「确定性计算」→ 加因子</strong>
+        <p class="muted">在 <code>factors/index.ts</code> 的 <code>FACTORS</code> 里注册一个纯函数，即可被
+        <code>compute_factor</code>/<code>analyze_factor</code> 调用。</p>
+      </div>
+      <div class="card">
+        <strong>加一个「外部能力」→ 加工具</strong>
+        <p class="muted">在 <code>tools/</code> 写 <code>createXxxTool(Type, ...deps)</code>，
+        在 <code>tools/index.ts</code> 注册，必要时在 <code>data/</code> 补数据函数。</p>
+      </div>
+      <div class="card">
+        <strong>加一个「硬校验」→ verify.js</strong>
+        <p class="muted">skill 里放 <code>verify.js</code>，未来硬循环会强制跑它；现在先把验收标准写进 SKILL.md 正文。</p>
+      </div>
+    </div>
+
+    <p class="muted" style="margin-top:48px; border-top:1px solid var(--line); padding-top:16px;">
+      本文件由代码仓库现状自动梳理生成（对应 <code>ss-invst</code> 主进程 agent 模块），
+      用于讲解架构与循环，不代表任何投资建议。
+    </p>
+  </main>
+</div>
+
+<script>
+  // 侧栏滚动高亮
+  const links = Array.from(document.querySelectorAll('#toc a'));
+  const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const headings = Array.from(document.querySelectorAll('h2[id], h3[id]'));
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const a = map.get(e.target.id);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -70% 0px' });
+  headings.forEach(h => obs.observe(h));
+</script>
+</body>
+</html>

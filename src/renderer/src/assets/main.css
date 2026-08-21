@@ -136,6 +136,72 @@
   }
 }
 
+/* markdown-it 渲染输出（.markdown-body）的排版样式 */
+@layer components {
+  /* 超长无空格文本（如英文、长串数字）强制换行，避免出现横向滚动条 */
+  .markdown-body {
+    @apply break-words;
+  }
+  /* 代码块保留自身横向滚动，不因继承而换行 */
+  .markdown-body pre {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+  .markdown-body h1 {
+    @apply text-xl font-bold mt-3 mb-2;
+  }
+  .markdown-body h2 {
+    @apply text-lg font-bold mt-3 mb-2;
+  }
+  .markdown-body h3 {
+    @apply text-base font-semibold mt-2 mb-1;
+  }
+  .markdown-body h4,
+  .markdown-body h5,
+  .markdown-body h6 {
+    @apply text-sm font-semibold mt-2 mb-1;
+  }
+  .markdown-body p {
+    @apply my-2 leading-relaxed;
+  }
+  .markdown-body a {
+    @apply text-blue-500 underline;
+  }
+  .markdown-body ul {
+    @apply list-disc pl-5 my-2 space-y-1;
+  }
+  .markdown-body ol {
+    @apply list-decimal pl-5 my-2 space-y-1;
+  }
+  .markdown-body blockquote {
+    @apply border-l-4 border-border pl-3 my-2 text-muted-foreground;
+  }
+  .markdown-body hr {
+    @apply my-3 border-border;
+  }
+  .markdown-body code {
+    @apply px-1 py-[1px] rounded bg-muted border border-border text-[0.9em] font-mono;
+  }
+  .markdown-body pre {
+    @apply bg-muted border border-border rounded-md p-3 my-2 overflow-x-auto text-xs;
+  }
+  .markdown-body pre code {
+    @apply px-0 py-0 rounded-none bg-transparent border-0 text-xs font-mono;
+  }
+  .markdown-body table {
+    @apply w-full border-collapse my-2;
+  }
+  .markdown-body th {
+    @apply border border-border bg-muted px-2 py-1 text-left font-semibold whitespace-nowrap;
+  }
+  .markdown-body td {
+    @apply border border-border px-2 py-1 whitespace-nowrap;
+  }
+  .markdown-body tbody tr:nth-child(even) {
+    @apply bg-muted/40;
+  }
+}
+
 html[class='dark'] *::-webkit-scrollbar {
   width: 5px;
   height: 5px;

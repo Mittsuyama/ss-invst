@@ -129,20 +129,6 @@ export interface FetchCalendarEventsResult {
 }
 
 /**
- * 根据证券代码前缀推断市场
- */
-function inferMarket(code: string): 'SH' | 'SZ' {
-  if (code.startsWith('60') || code.startsWith('68')) {
-    return 'SH';
-  }
-  if (code.startsWith('00') || code.startsWith('30')) {
-    return 'SZ';
-  }
-  // 默认返回上海
-  return 'SH';
-}
-
-/**
  * 所有已知的事件类型码列表（用于默认查询全部类型）
  */
 const ALL_EVENT_TYPE_CODES: EventTypeCode[] = Object.values(EVENT_TYPE_CODE);

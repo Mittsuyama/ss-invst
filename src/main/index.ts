@@ -4,6 +4,8 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { createApiIpc } from './utils/createApiIpc';
 import { createSseIpc } from './utils/sse';
+import { createAgentIpc } from './agent/agent';
+import { loadDotEnv } from './utils/dotenv';
 
 function createWindow(): void {
   // Create the browser window.
@@ -44,6 +46,9 @@ app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
 
+  // 加载 .env 作为兜底配置（TUSHARE_TOKEN / DEEPSEEK_API_KEY 等）
+  loadDotEnv();
+
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
@@ -56,6 +61,7 @@ app.whenReady().then(() => {
 
   createApiIpc();
   createSseIpc();
+  createAgentIpc();
   createWindow();
 
   app.on('activate', function () {

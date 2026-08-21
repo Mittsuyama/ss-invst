@@ -41,11 +41,26 @@ export const qualityStockIdListAtom = atomWithStorage<Array<string>>(
 export interface EnvConfig {
   cookie: string;
   tushareToken: string;
+  /** LLM 提供商 */
+  llmProvider: string;
+  /** LLM 模型 id */
+  llmModel: string;
+  /** LLM API Key */
+  llmApiKey: string;
+  /** 自定义 OpenAI 兼容接口 baseUrl */
+  llmBaseUrl: string;
 }
 
 export const envAtom = atomWithStorage<EnvConfig>(
   'env-config',
-  { cookie: '', tushareToken: '' },
+  {
+    cookie: '',
+    tushareToken: '',
+    llmProvider: 'deepseek',
+    llmModel: 'deepseek-chat',
+    llmApiKey: '',
+    llmBaseUrl: '',
+  },
   undefined,
   {
     getOnInit: true,

@@ -236,7 +236,7 @@ export const Option = memo(() => {
   });
 
   return (
-    <div className="w-full h-full flex flex-col p-6 pt-1 text-sm">
+    <div className="w-full h-full flex flex-col p-6 pt-2 text-sm">
       <div className="flex-none flex gap-4 items-center px-1 mb-4">
         <div className="font-bold">期权</div>
         <Select

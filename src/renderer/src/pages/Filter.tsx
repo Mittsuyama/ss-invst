@@ -211,7 +211,7 @@ export const Filter = memo(() => {
   return (
     <>
       <div
-        className={clsx('h-full px-4 flex flex-col', {
+        className={clsx('h-full px-4 pt-2 flex flex-col', {
           'pointer-events-none opacity-40': loading,
         })}
       >

@@ -15,7 +15,7 @@ import { historySearchOptionsAtom } from '@renderer/models/search';
 const ROUTER_LIST: RouterOption[] = [
   {
     type: 'router',
-    title: '首页',
+    title: 'Agent',
     Icon: House,
     extra: 'sy/home',
     path: RouterKey.HOME,

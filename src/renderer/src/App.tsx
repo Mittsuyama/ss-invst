@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { PiggyBank } from 'lucide-react';
 import { RouterKey } from '@/types/global';
 import { ChoiceOverview } from '@/pages/ChoiceOverview';
-import { Home } from '@/pages/Home';
+import { Agent } from '@/pages/Agent';
 import { Choice } from '@/pages/Choice';
 import { Filter } from '@/pages/Filter';
 import { Option } from '@/pages/Option';
@@ -30,8 +30,8 @@ const ROUTES: Array<{
 }> = [
   {
     key: RouterKey.HOME,
-    title: '首页',
-    FC: Home,
+    title: 'Agent',
+    FC: Agent,
   },
   {
     title: '实时',
@@ -69,7 +69,7 @@ function App() {
     <>
       <div className="w-full h-full overflow-hidden flex flex-col bg-semi-color-bg-0 bg-background text-foreground">
         <div
-          className={clsx('flex-none w-full my-2 px-3 items-center', {
+          className={clsx('flex-none w-full py-2 px-3 items-center border-b border-border', {
             hidden: detailFullScreen,
             flex: !detailFullScreen,
           })}

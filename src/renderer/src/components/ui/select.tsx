@@ -90,8 +90,15 @@ function SelectLabel({ className, ...props }: React.ComponentProps<typeof Select
 function SelectItem({
   className,
   children,
+  hint,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+}: React.ComponentProps<typeof SelectPrimitive.Item> & {
+  /**
+   * 附在选项文字之后的补充说明。放在 ItemText 之外，因此不会出现在触发器选值里；
+   * 用于展示较长的描述，超出宽度会以省略号截断。
+   */
+  hint?: React.ReactNode;
+}) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
@@ -107,6 +114,14 @@ function SelectItem({
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      {hint != null && (
+        <div
+          className="text-muted-foreground min-w-0 flex-1 truncate text-xs"
+          title={typeof hint === 'string' ? hint : undefined}
+        >
+          {hint}
+        </div>
+      )}
     </SelectPrimitive.Item>
   );
 }
