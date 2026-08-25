@@ -1,6 +1,6 @@
 ---
 name: agent-tool-authoring
-description: 指导如何给这个投资 agent 新增一个工具（tool）：AgentTool 结构、TypeBox 参数 schema、数据层分离、注册、UI 事件、错误处理与确定性计算原则。当用户需要：新增/扩展 agent 的某个工具、给 agent 加取数/计算/文件/网络/脚本能力、封装一个确定性函数成 tool、或想了解 tool 的写法与注册流程时使用。
+description: 指导如何给这个投资 agent 新增一个工具（tool）：AgentTool 结构、TypeBox 参数 schema、数据层分离、数据源标注、注册、UI 事件、错误处理与确定性计算原则。当用户需要：新增/扩展 agent 的某个工具、给 agent 加取数/计算/文件/网络/脚本能力、封装一个确定性函数成 tool、或想了解 tool 的写法与注册流程时使用。
 ---
 
 # Agent 工具（tool）编写指南
@@ -46,7 +46,7 @@ export function createGetQuoteTool(Type: PiType): AgentTool {
   return {
     name: 'get_quote',                    // 唯一 id，snake_case（LLM 与事件都用它）
     label: '行情快照',                     // 中文显示名，进 UI 的工具进度
-    description: '……',                   // LLM 决定何时调用的依据，见 §3
+    description: '[eastmoney] ……',        // LLM 决定何时调用的依据，开头标数据源，见 §3
     parameters: Type.Object({ /* … */ }), // TypeBox schema，见 §4
     // executionMode: 'sequential',       // 可选：覆盖全局并行策略（默认走 agent 的 parallel）
     execute: async (_id, params) => {
@@ -68,15 +68,30 @@ export function createGetQuoteTool(Type: PiType): AgentTool {
 
 ## 3. description 怎么写
 
-`description` 是 LLM 决定「什么时候该调这个 tool、传什么参数」的**唯一依据**。按「是什么 + 关键参数 + 何时用 + 输入格式约定」写，例如：
+`description` 是 LLM 决定「什么时候该调这个 tool、传什么参数」的**唯一依据**。按「数据源标识 + 是什么 + 关键参数 + 何时用 + 输入格式约定」写。
+
+**数据源标识（取数类 tool 必加）**：凡是有取数来源的 tool，description 开头必须用方括号标注数据源，让 agent 快速判断来源与限流风险：
+
+- `[tushare]` —— 数据来自 Tushare；
+- `[eastmoney]` —— 数据来自东方财富（可能限流、需人机校验）；
+- `[复合：…]` —— 混合型，如「eastmoney K线 + 本地计算」，点明组合，别只写 `[复合]`；
+- 纯本地/工具类（`save_file`、`read_file`、`run_script`、`update_todo`、`decide`、`list_skills`、`use_skill` 等）无取数来源，不标注。
+
+示例：
 
 ```
-'获取个股实时行情与估值快照：最新价、涨跌幅、市盈率TTM、市净率、总市值、换手率、上市日期、所属行业等。'
+'[eastmoney] 获取个股实时行情与估值快照：最新价、涨跌幅、市盈率TTM、市净率、总市值、换手率、上市日期、所属行业等。'
 ```
 
 ```
-'按股票名称、代码或拼音首字母搜索 A 股证券，返回候选列表。在拉取任何股票数据前，先用它确定 secid。'
+'[tushare] 调用 Tushare 通用接口获取补充数据。常用 api_name：daily（日线）、daily_basic（每日指标）……'
 ```
+
+```
+'[复合：eastmoney K线 + 本地计算] 拉取 K 线并用指定因子计算买卖点信号……'
+```
+
+> 判断数据源的依据是「tool 最终调用的取数函数」：调 `data/eastmoney.ts` 里的函数标 `[eastmoney]`，调 `data/tushare.ts` 里的函数标 `[tushare]`，两者都调或「取数 + 本地计算」标 `[复合：…]`。像 `secidToTsCode` 这种纯代码转换不算取数，不要因此标成复合。
 
 如果参数有特殊格式（如 `secid` 要「市场号.代码」），写进 description 或参数的 `description` 字段里，帮 LLM 少踩坑。
 
@@ -225,7 +240,7 @@ export function createGetFooTool(Type: PiType): AgentTool {
   return {
     name: 'get_foo',
     label: '获取 Foo',
-    description: '获取某只股票的 Foo 数据（说明是什么 + 何时用）。',
+    description: '[eastmoney] 获取某只股票的 Foo 数据（说明是什么 + 何时用）。',
     parameters: Type.Object({
       secid: Type.String({ description: '股票 id，格式「市场号.代码」，如 1.600519' }),
       limit: Type.Optional(Type.Integer({ default: 100, minimum: 1, maximum: 500 })),
@@ -249,7 +264,7 @@ createGetFooTool(Type),
 ## 12. 检查清单
 
 1. `name` 唯一、`snake_case`；`label` 中文、一眼可读。
-2. `description` 写清「做什么 + 关键参数 + 何时用 + 输入格式约定」。
+2. `description` 开头标数据源标识（`[tushare]` / `[eastmoney]` / `[复合：…]`；纯本地/工具类不标），并写清「做什么 + 关键参数 + 何时用 + 输入格式约定」。
 3. `parameters` 用 TypeBox 表达类型/约束/默认值；execute 里按 schema 断言。
 4. 网络/取数/计算逻辑下沉 `data/` 或 `factors/`，tool 保持薄封装。
 5. 返回值走 `ok(摘要, 数据, maxLen?)`；大输出记得放宽 `maxLen`。

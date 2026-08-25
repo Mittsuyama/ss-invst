@@ -139,11 +139,12 @@ export interface KlineRow {
   turnoverRate: number;
 }
 
-/** 日K/周K/月K 数据（含技术指标列） */
+/** 日K/周K/月K 数据（含技术指标列）。fqt：0=不复权，1=前复权（默认），2=后复权 */
 export async function getKlines(
   secid: string,
   period: 'day' | 'week' | 'month' = 'day',
   limit = 120,
+  fqt: '0' | '1' | '2' = '1',
 ): Promise<{ rows: KlineRow[]; summary: Record<string, unknown> }> {
   const klt = period === 'week' ? '102' : period === 'month' ? '103' : '101';
   const data = await emGet('https://push2his.eastmoney.com/api/qt/stock/kline/get', {
@@ -151,7 +152,7 @@ export async function getKlines(
     fields1: 'f1,f2,f3,f4,f5,f6',
     fields2: 'f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61',
     klt,
-    fqt: '1',
+    fqt,
     end: '20500101',
     lmt: String(limit),
   });

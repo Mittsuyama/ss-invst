@@ -9,7 +9,7 @@ export function createComputeFactorTool(Type: PiType): AgentTool {
   return {
     name: 'compute_factor',
     label: '计算因子信号',
-    description: `拉取 K 线并用指定因子计算买卖点信号。可用因子：${describeFactors()}。period 可选 day/week/month，limit 是 K 线根数（默认 250），params 传该因子的参数（省略用默认值）。`,
+    description: `[复合：eastmoney K线 + 本地计算] 拉取 K 线并用指定因子计算买卖点信号。可用因子：${describeFactors()}。period 可选 day/week/month，limit 是 K 线根数（默认 250），params 传该因子的参数（省略用默认值）。`,
     parameters: Type.Object({
       secid: Type.String({ description: '股票 id，如 1.600519' }),
       factor: Type.String({ description: '因子名，如 macd_cross / ma_cross / rsi_reversal / boll_breakout' }),

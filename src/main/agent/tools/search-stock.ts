@@ -7,7 +7,7 @@ export function createSearchStockTool(Type: PiType): AgentTool {
     name: 'search_stock',
     label: '搜索股票',
     description:
-      '按股票名称、代码或拼音首字母搜索 A 股证券，返回候选列表（含 id/代码/名称/交易所）。在拉取任何股票数据前，先用它确定 secid。',
+      '[eastmoney] 按股票名称、代码或拼音首字母搜索 A 股证券，返回候选列表（含 id/代码/名称/交易所）。在拉取任何股票数据前，先用它确定 secid。',
     parameters: Type.Object({
       keyword: Type.String({ description: '股票名称、代码或拼音，如 贵州茅台 / 600519 / gzmt' }),
     }),

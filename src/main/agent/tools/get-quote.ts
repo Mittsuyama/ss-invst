@@ -7,7 +7,7 @@ export function createGetQuoteTool(Type: PiType): AgentTool {
     name: 'get_quote',
     label: '行情快照',
     description:
-      '获取个股实时行情与估值快照：最新价、涨跌幅、市盈率TTM、市净率、总市值、换手率、上市日期、所属行业等。',
+      '[eastmoney] 获取个股实时行情与估值快照：最新价、涨跌幅、市盈率TTM、市净率、总市值、换手率、上市日期、所属行业等。',
     parameters: Type.Object({
       secid: Type.String({
         description: '股票 id，格式「市场号.代码」，如 1.600519（1=上交所 0=深交所）',

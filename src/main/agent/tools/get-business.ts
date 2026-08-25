@@ -6,7 +6,7 @@ export function createGetBusinessTool(Type: PiType): AgentTool {
   return {
     name: 'get_business',
     label: '主营构成',
-    description: '获取公司最新年报的主营业务构成（按产品/行业的收入、占比、毛利率）。',
+    description: '[eastmoney] 获取公司最新年报的主营业务构成（按产品/行业的收入、占比、毛利率）。',
     parameters: Type.Object({
       secid: Type.String({ description: '股票 id，如 1.600519' }),
     }),

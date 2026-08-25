@@ -1,5 +1,6 @@
 import { atom } from 'jotai';
 import type { AgentAttachment, AgentEvent, SavedFileInfo } from '@shared/types/agent';
+import type { KeyMoveEntry, KeyMoveList } from '@shared/types/key-move';
 
 /** 实时视图里的工具调用卡片状态 */
 export interface ToolCallState {
@@ -26,6 +27,8 @@ export interface ChatMessage {
   toolsExpanded?: boolean;
   /** 本轮 turn 保存/下载的文件（渲染成对话底部文件卡片） */
   files?: SavedFileInfo[];
+  /** 本轮 turn 计算出的关键行情区间（渲染成气泡内可点击列表） */
+  keyMoves?: KeyMoveList[];
   done?: boolean;
 }
 
@@ -62,6 +65,7 @@ export const TOOL_LABELS: Record<string, string> = {
   search_stock: '搜索股票',
   get_quote: '行情快照',
   get_klines: 'K线数据',
+  get_key_moves: '关键行情区间',
   get_financial_statements: '财务报表',
   get_business: '主营构成',
   get_dividends: '分红历史',
@@ -127,6 +131,7 @@ export function mapAgentMessages(
   msgs: unknown[],
   workspacePath = '',
   sessionId = '',
+  keyMoves: KeyMoveEntry[] = [],
 ): ChatMessage[] {
   const out: ChatMessage[] = [];
   // 上一条 assistant 消息的工具列表，用于回填 toolResult
@@ -177,12 +182,14 @@ export function mapAgentMessages(
       let thinking = '';
       const tools: ToolCallState[] = [];
       const files: SavedFileInfo[] = [];
+      const messageKeyMoves: KeyMoveList[] = [];
       for (const b of (m.content as any[]) ?? []) {
         if (b?.type === 'text' && typeof b?.text === 'string') text += b.text;
         else if (b?.type === 'thinking' && typeof b?.thinking === 'string') thinking += b.thinking;
         else if (b?.type === 'toolCall' && typeof b?.name === 'string') {
+          const toolCallId = typeof b.id === 'string' ? b.id : genId('t');
           tools.push({
-            id: typeof b.id === 'string' ? b.id : genId('t'),
+            id: toolCallId,
             name: b.name,
             label: TOOL_LABELS[b.name] ?? b.name,
             args: b.arguments,
@@ -192,6 +199,8 @@ export function mapAgentMessages(
           });
           const f = fileFromToolCall(b.name, b.arguments, workspacePath, sessionId);
           if (f) files.push(f);
+          const km = keyMoves.find((e) => e.toolCallId === toolCallId);
+          if (km) messageKeyMoves.push({ security: km.security, items: km.items });
         }
       }
 
@@ -203,6 +212,7 @@ export function mapAgentMessages(
         tools: tools.length ? tools : undefined,
         toolsExpanded: false,
         files: files.length ? files : undefined,
+        keyMoves: messageKeyMoves.length ? messageKeyMoves : undefined,
         done: true,
       });
       pendingTools = tools.length ? tools : null;

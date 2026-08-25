@@ -1,9 +1,10 @@
 /**
  * Session 持久化相关类型（主进程 <-> 渲染进程）
  * 文件布局：{workspace}/.ss-invst/sessions/{id}/
- *   meta.json, messages.jsonl, task.md, todo.md,
+ *   meta.json, messages.jsonl, task.md, todo.md, key-moves.json,
  *   intermediate/, output/, files/, uploads/
  */
+import type { KeyMoveEntry } from './key-move';
 
 export interface SessionMeta {
   id: string;
@@ -20,6 +21,8 @@ export interface SessionSnapshot {
   meta: SessionMeta;
   /** pi-agent 的 AgentMessage[]（JSON 序列化后的原始对象） */
   messages: unknown[];
+  /** 会话内计算出的关键行情区间（按 toolCallId 关联消息，重开会话还原气泡卡片） */
+  keyMoves?: KeyMoveEntry[];
 }
 
 /** 会话内文件信息 */
@@ -42,6 +45,12 @@ export interface SessionFileList {
   output: SessionFileInfo[];
 }
 
+/** 读取文本文件的结果（渲染进程预览用） */
+export interface SessionReadFileResult {
+  type: 'pdf' | 'text' | 'other';
+  text: string;
+}
+
 /** 任务清单条目状态 */
 export type TodoStatus = 'pending' | 'in_progress' | 'done';
 
@@ -58,3 +67,4 @@ export const SESSION_DELETE_CHANNEL = 'session:delete';
 export const SESSION_CLEAR_CHANNEL = 'session:clear';
 export const SESSION_LIST_FILES_CHANNEL = 'session:list-files';
 export const SESSION_OPEN_FILE_CHANNEL = 'session:open-file';
+export const SESSION_READ_FILE_CHANNEL = 'session:read-file';

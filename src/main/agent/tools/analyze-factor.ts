@@ -10,7 +10,7 @@ export function createAnalyzeFactorTool(Type: PiType): AgentTool {
   return {
     name: 'analyze_factor',
     label: '因子回测统计',
-    description: `拉取 K 线，用指定因子产生买卖信号并做事件回测，返回胜率、赔率（profit factor）、平均盈亏、交易明细等统计，用于研究因子有效性。可用因子：${describeFactors()}。holdBars 是买入后最长持有根数（默认 20）。`,
+    description: `[复合：eastmoney K线 + 本地计算] 拉取 K 线，用指定因子产生买卖信号并做事件回测，返回胜率、赔率（profit factor）、平均盈亏、交易明细等统计，用于研究因子有效性。可用因子：${describeFactors()}。holdBars 是买入后最长持有根数（默认 20）。`,
     parameters: Type.Object({
       secid: Type.String({ description: '股票 id，如 1.600519' }),
       factor: Type.String({ description: '因子名' }),

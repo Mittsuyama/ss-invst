@@ -1,6 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import type { AgentEvent, AgentPromptPayload, AgentAttachment, SkillInfo } from '@shared/types/agent'
-import type { SessionMeta, SessionSnapshot, SessionFileList } from '@shared/types/session'
+import type { SessionMeta, SessionSnapshot, SessionFileList, SessionReadFileResult } from '@shared/types/session'
 
 declare global {
   interface Window {
@@ -22,6 +22,7 @@ declare global {
       clear: (workspacePath: string, id: string) => Promise<SessionMeta>
       listFiles: (workspacePath: string, id: string) => Promise<SessionFileList>
       openFile: (filePath: string) => Promise<boolean>
+      readFile: (filePath: string) => Promise<SessionReadFileResult>
     }
     api: unknown
   }

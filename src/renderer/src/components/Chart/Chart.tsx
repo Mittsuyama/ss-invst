@@ -2,73 +2,24 @@ import { memo, useEffect, useRef, useState, useMemo } from 'react';
 import clsx from 'clsx';
 import { useSize, useDebounceFn, useMemoizedFn } from 'ahooks';
 import { useAtom, useAtomValue } from 'jotai';
-import { formatValue, isValid } from '@/lib/fork-form-klinecharts';
-import {
-  init,
-  dispose,
-  CandleType,
-  ActionType,
-  Chart as ChartObject,
-  TooltipShowRule,
-} from 'klinecharts';
-import { PeriodType, PriceAndVolumeItem } from '@shared/types/stock';
-import {
-  PRICE_COLOR,
-  GREEN_COLOR,
-  RED_COLOR,
-  // DARK_GREEN_COLOR,
-  // DARK_RED_COLOR,
-  // periodType2MaPeriods,
-  NEED_SEGMENTS_PERIOD,
-  periodType2MaPeriods,
-} from '@/lib/constants';
+import { init, dispose, ActionType, Chart as ChartObject } from 'klinecharts';
+import { PriceAndVolumeItem } from '@shared/types/stock';
 import { themeAtom } from '@/models/global';
 import { fetchKLines } from '@/api/klines';
-import {
-  computePivotWithDp,
-  computeSegmentsSimply,
-  computeStrokeSimply,
-} from '@shared/lib/chanlun';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarSpace } from '@/types/global';
 import { barSpaceInPeriodAtom } from '@/models/detail';
 import { useLatestRequest } from '@/hooks/use-latest-request';
-import {
-  STROKE_COLOR,
-  SEGEMENT_COLOR,
-  UP_PIVOT_COLOR,
-  DOWN_PIVOT_COLOR,
-  MA_COLORS,
-  DARK_MA_COLORS,
-  KDJ_COLORS,
-  DARK_KDJ_COLORS,
-  BAR_SPACE_SIZE,
-  BAR_SPACE_TITLE,
-} from './helper';
+import { BAR_SPACE_SIZE, BAR_SPACE_TITLE } from './helper';
+import { buildChanlunOverlays } from './overlays';
+import { buildChartStyles } from './chartStyles';
+import { setupIndicators } from './indicators';
+import { buildPinbarOverlays, PinbarStopMode } from './pinbar';
+import { CHART_ID_PREFIX, ZX_TRENDS, ChartProps } from './types';
 
-const ZX_TRENDS: PeriodType[] = [PeriodType.DAY, PeriodType.WEEK];
+/** pinbar 止损档位（后期可调：aggressive | conservative） */
+const PINBAR_STOP_MODE: PinbarStopMode = 'aggressive';
 
-interface ChartProps {
-  id: string;
-  period: PeriodType;
-  setCurrent?: (item: PriceAndVolumeItem | null) => void;
-  overlayVisible?: boolean;
-  className?: string;
-  /** 是否显示成交量 */
-  hideVol?: boolean;
-  /** 隐藏重置缩放按钮 */
-  hideResetScale?: boolean;
-  /** 迷你图 */
-  mini?: boolean;
-  /** 多图并存 */
-  multi?: boolean;
-  /** 选择最后一个 K 线作为默认价格 */
-  autoSelectLast?: boolean;
-}
-
-const LARGET_INDICATOR_HEIGHT = 80;
-const MINI_INDICATOR_HEIGHT = 48;
-const CHART_ID_PREFIX = 'detail-klines';
 export const Chart = memo(
   ({
     id,
@@ -88,6 +39,10 @@ export const Chart = memo(
     const [unchangableOverlayVisible] = useState(overlayVisible);
     const [unchangableBarSpace] = useState(barSpaceInPeriod[period]);
     const chartDivRef = useRef<HTMLDivElement>(null);
+    // 是否已为当前图表计算并绘制过 chanlun/pinbar overlay（懒加载标记）
+    const overlaysDrawnRef = useRef(false);
+    // 上一次已应用到图上的 overlayVisible，用于判断是否真正发生变化
+    const prevOverlayVisibleRef = useRef(overlayVisible);
 
     const { data: list } = useLatestRequest(() => fetchKLines(id, period), [id, period]);
 
@@ -99,280 +54,77 @@ export const Chart = memo(
     );
 
     const size = useSize(chartDivRef);
-
     const last = useMemo(() => list?.at(-1), [list]);
 
     useEffect(onDebouncedResize, [onDebouncedResize, size]);
 
-    useEffect(() => {
-      (async () => {
-        if (list && chart) {
-          const needSegments = NEED_SEGMENTS_PERIOD.includes(period);
-          const strokes = computeStrokeSimply(list);
-          const segments = needSegments ? computeSegmentsSimply(strokes) : [];
-          const pivots = computePivotWithDp(needSegments ? segments : strokes);
-          // const { strokes, pivots } = await chanlunComputeRequest(list);
-          chart.createOverlay([
-            ...strokes.map((s) => ({
-              visible: unchangableOverlayVisible,
-              name: 'segment',
-              paneId: 'candle_pane',
-              lock: true,
-              points: [
-                { timestamp: s.start.timestamp, value: s.start.price },
-                { timestamp: s.end.timestamp, value: s.end.price },
-              ],
-              styles: {
-                line: {
-                  size: 1,
-                  color: STROKE_COLOR,
-                },
-              },
-            })),
-            ...segments.map((s) => ({
-              visible: unchangableOverlayVisible,
-              name: 'segment',
-              paneId: 'candle_pane',
-              lock: true,
-              points: [
-                { timestamp: s.start.timestamp, value: s.start.price },
-                { timestamp: s.end.timestamp, value: s.end.price },
-              ],
-              styles: {
-                line: {
-                  size: 2,
-                  color: SEGEMENT_COLOR,
-                },
-              },
-            })),
-            ...pivots.map((p) => ({
-              visible: unchangableOverlayVisible,
-              name: 'pivot',
-              paneId: 'candle_pane',
-              lock: true,
-              points: [
-                { timestamp: p.start, value: p.low },
-                { timestamp: p.end, value: p.high },
-              ],
-              styles: {
-                color: p.type === 'up' ? UP_PIVOT_COLOR : DOWN_PIVOT_COLOR,
-              },
-            })),
-          ]);
-        }
-      })();
-    }, [list, chart, unchangableOverlayVisible, period]);
-
+    // 自动选中最后一根 K 线作为默认价格
     useEffect(() => {
       if (last && autoSelectLast) {
         setCurrent?.(last);
       }
-    }, [autoSelectLast, list]);
+    }, [autoSelectLast, last, setCurrent]);
 
-    // 指标显影
+    // 指标显影 + chanlun/pinbar overlay 懒加载
     useEffect(() => {
       if (!chart) {
         return;
       }
-      if (ZX_TRENDS.includes(period)) {
-        chart.overrideIndicator({
-          name: 'ZX-TREND',
-          visible: !overlayVisible,
-        });
-      } else {
-        chart.overrideIndicator({
-          name: 'MA',
-          visible: !overlayVisible,
+      const indicatorName = ZX_TRENDS.includes(period) ? 'ZX-TREND' : 'MA';
+      chart.overrideIndicator({
+        name: indicatorName,
+        visible: !overlayVisible,
+      });
+
+      const overlayVisibleChanged = overlayVisible !== prevOverlayVisibleRef.current;
+
+      if (!overlaysDrawnRef.current) {
+        // 尚未绘制：pinbar 模式（overlayVisible=false）需立即渲染；
+        // 缠论模式（默认 true）懒加载，等 overlayVisible 变化时再计算
+        if (!overlayVisible || overlayVisibleChanged) {
+          if (list) {
+            chart.createOverlay([
+              ...buildChanlunOverlays(list, period, overlayVisible),
+              ...buildPinbarOverlays(list, { stopMode: PINBAR_STOP_MODE }, !overlayVisible),
+            ]);
+            overlaysDrawnRef.current = true;
+          }
+        }
+      } else if (overlayVisibleChanged) {
+        // 已绘制：只切换 visible（缠论与 pinbar 互斥）
+        chart.getOverlays().forEach((overlay) => {
+          const targetVisible = overlay.name === 'pinbarRange' ? !overlayVisible : overlayVisible;
+          if (overlay.visible !== targetVisible) {
+            chart.overrideOverlay({
+              id: overlay.id,
+              visible: targetVisible,
+            });
+          }
         });
       }
-      const overlays = chart.getOverlays();
-      overlays.forEach((overlay) => {
-        if (overlay.visible !== overlayVisible) {
-          chart.overrideOverlay({
-            id: overlay.id,
-            visible: overlayVisible,
-          });
-        }
-      });
+
+      prevOverlayVisibleRef.current = overlayVisible;
+      // list 在闭包中始终为最新数据（chart 非空时 list 必非空），无需加入依赖
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [chart, overlayVisible, period]);
 
+    // 初始化图表
     useEffect(() => {
       if (!list) {
         return;
       }
       const chart = init(`${CHART_ID_PREFIX}-${id}-${period}`);
       if (chart) {
+        // 新图表实例还没有 overlay，重置懒加载标记
+        overlaysDrawnRef.current = false;
         chart.applyNewData(list);
-        chart.setStyles({
-          grid: {
-            show: false,
-          },
-          indicator: {
-            bars: [
-              {
-                downColor: GREEN_COLOR,
-                upColor: RED_COLOR,
-                // downColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
-                // upColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
-              },
-            ],
-            tooltip: {
-              showRule: mini ? TooltipShowRule.FollowCross : TooltipShowRule.Always,
-            },
-          },
-          separator: {
-            color: theme === 'dark' ? '#333' : '#ddd',
-          },
-          xAxis: {
-            size: mini ? 0 : 28,
-            show: !mini,
-            axisLine: {
-              color: theme === 'dark' ? '#333' : '#ddd',
-            },
-          },
-          yAxis: {
-            size: mini ? 0 : 54,
-            show: false,
-            // axisLine: {
-            //   color: theme === 'dark' ? '#333' : '#ddd',
-            // },
-          },
-          candle: {
-            type: CandleType.CandleUpStroke,
-            bar: {
-              upColor: RED_COLOR,
-              upBorderColor: RED_COLOR,
-              upWickColor: RED_COLOR,
-              downColor: GREEN_COLOR,
-              downBorderColor: GREEN_COLOR,
-              downWickColor: GREEN_COLOR,
-              // upColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
-              // upBorderColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
-              // upWickColor: theme === 'dark' ? DARK_RED_COLOR : RED_COLOR,
-              // downColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
-              // downBorderColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
-              // downWickColor: theme === 'dark' ? DARK_GREEN_COLOR : GREEN_COLOR,
-            },
-            priceMark: {
-              last: {
-                show: !mini,
-                upColor: PRICE_COLOR,
-                downColor: PRICE_COLOR,
-                noChangeColor: PRICE_COLOR,
-              },
-            },
-            tooltip: {
-              showRule: mini ? TooltipShowRule.FollowCross : TooltipShowRule.Always,
-              custom: [
-                { title: 'open', value: '{open}' },
-                { title: 'high', value: '{high}' },
-                { title: 'low', value: '{low}' },
-                { title: 'close', value: '{close}' },
-              ],
-            },
-          },
-        });
-        if (ZX_TRENDS.includes(period)) {
-          chart.createIndicator(
-            {
-              visible: !unchangableOverlayVisible,
-              name: 'ZX-TREND',
-              shouldOhlc: false,
-              // calcParams: periodType2MaPeriods[period],
-              styles: {
-                lines: [
-                  {
-                    color: theme === 'dark' ? 'white' : 'black',
-                    size: 1,
-                  },
-                  {
-                    color: theme === 'dark' ? 'yellow' : 'orange',
-                    size: 1,
-                  },
-                ],
-              },
-            },
-            true,
-            { id: 'candle_pane', height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
-          );
-        } else {
-          chart.createIndicator(
-            {
-              visible: !unchangableOverlayVisible,
-              name: 'MA',
-              shouldOhlc: false,
-              calcParams: periodType2MaPeriods[period],
-              styles: {
-                lines: (theme === 'dark' ? DARK_MA_COLORS : MA_COLORS).map((color) => ({
-                  color,
-                  size: 1,
-                })),
-              },
-            },
-            true,
-            { id: 'candle_pane', height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
-          );
-        }
-        // chart.createIndicator('BBI', true, { id: 'candle_pane' });
-        !hideVol &&
-          chart.createIndicator({
-            name: 'VOL',
-            figures: [
-              { key: 'ma1', title: 'MA5: ', type: 'line' },
-              { key: 'ma2', title: 'MA10: ', type: 'line' },
-              { key: 'ma3', title: 'MA20: ', type: 'line' },
-              {
-                key: 'volume',
-                title: 'VOLUME: ',
-                type: 'bar',
-                baseValue: 0,
-                styles: ({ data, indicator, defaultStyles }) => {
-                  const prev = data.prev as PriceAndVolumeItem | undefined;
-                  const current = data.current as PriceAndVolumeItem | undefined;
-                  let color = formatValue(
-                    indicator.styles,
-                    'bars[0].noChangeColor',
-                    defaultStyles!.bars[0].noChangeColor,
-                  );
-                  if (isValid(current) && isValid(prev)) {
-                    if (current.close > prev.close) {
-                      color = formatValue(
-                        indicator.styles,
-                        'bars[0].upColor',
-                        defaultStyles!.bars[0].upColor,
-                      );
-                    } else if (current.close < prev.close) {
-                      color = formatValue(
-                        indicator.styles,
-                        'bars[0].downColor',
-                        defaultStyles!.bars[0].downColor,
-                      );
-                    }
-                  }
-                  return { color: color as string };
-                },
-              },
-            ],
-          });
-        chart.createIndicator(
-          {
-            name: 'KDJ',
-            styles: {
-              lines: (theme === 'dark' ? DARK_KDJ_COLORS : KDJ_COLORS).map((color) => ({
-                color,
-                size: 1,
-              })),
-            },
-          },
-          false,
-          { height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT },
-        );
-        // chart.createIndicator('KDJ');
-        chart.createIndicator({
-          name: 'MACD',
-          styles: {
-            height: mini ? MINI_INDICATOR_HEIGHT : LARGET_INDICATOR_HEIGHT,
-          },
+        chart.setStyles(buildChartStyles(theme, !!mini));
+        setupIndicators(chart, {
+          period,
+          theme,
+          mini: !!mini,
+          hideVol: !!hideVol,
+          visible: unchangableOverlayVisible,
         });
         chart.setBarSpace(
           unchangableBarSpace && unchangableBarSpace in BAR_SPACE_SIZE
@@ -382,8 +134,7 @@ export const Chart = memo(
         chart.scrollToDataIndex(list.length + (multi ? 1 : 6));
         chart.subscribeAction(ActionType.OnCrosshairChange, (e) => {
           if (typeof e === 'object' && e && 'kLineData' in e) {
-            const data = e.kLineData as PriceAndVolumeItem;
-            setCurrent?.(data);
+            setCurrent?.(e.kLineData as PriceAndVolumeItem);
           }
         });
         setChart(chart);
@@ -411,7 +162,6 @@ export const Chart = memo(
       }));
       chart?.setBarSpace(BAR_SPACE_SIZE[barSpace]);
       chart && list && chart.scrollToDataIndex(list.length + (multi ? 1 : 6));
-      // chart?.scrollToDataIndex((list?.length || 1) - 1);
     });
 
     return (

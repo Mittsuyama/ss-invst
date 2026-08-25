@@ -9,7 +9,7 @@ export function createGetKlinesTool(Type: PiType): AgentTool {
     name: 'get_klines',
     label: 'K线数据',
     description:
-      '获取个股 K 线（日/周/月）的 OHLCV 基础行情数据：开/收/高/低、成交量、成交额、振幅、涨跌幅、换手率。用于技术分析。技术指标（均线/MACD/KDJ/RSI/BOLL 等）请用 get_stk_factors（tushare stk_factor_pro）。',
+      '[eastmoney] 获取个股 K 线（日/周/月）的 OHLCV 基础行情数据：开/收/高/低、成交量、成交额、振幅、涨跌幅、换手率。用于技术分析。技术指标（均线/MACD/KDJ/RSI/BOLL 等）请用 get_stk_factors（tushare stk_factor_pro）。',
     parameters: Type.Object({
       secid: Type.String({ description: '股票 id，如 1.600519' }),
       period: Type.Optional(PeriodEnum),

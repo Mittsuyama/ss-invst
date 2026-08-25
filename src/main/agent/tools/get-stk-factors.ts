@@ -8,7 +8,7 @@ export function createGetStkFactorsTool(Type: PiType): AgentTool {
     name: 'get_stk_factors',
     label: '技术面因子',
     description:
-      '获取股票每日技术面因子（tushare 专业版接口 stk_factor_pro）：覆盖全历史的量化技术因子，如均线、MACD、KDJ、RSI、BOLL 等，字段带 _bfq（不复权）/ _qfq（前复权）/ _hfq（后复权）口径。用于技术分析。输入 secid，可选 start_date/end_date（YYYYMMDD）限定区间，fields 指定需要的列（逗号分隔，留空取全部）。该接口为专业版，可能需要更高 Tushare 积分/权限。',
+      '[tushare] 获取股票每日技术面因子（tushare 专业版接口 stk_factor_pro）：覆盖全历史的量化技术因子，如均线、MACD、KDJ、RSI、BOLL 等，字段带 _bfq（不复权）/ _qfq（前复权）/ _hfq（后复权）口径。用于技术分析。输入 secid，可选 start_date/end_date（YYYYMMDD）限定区间，fields 指定需要的列（逗号分隔，留空取全部）。该接口为专业版，可能需要更高 Tushare 积分/权限。',
     parameters: Type.Object({
       secid: Type.String({ description: '股票 id，如 1.600519' }),
       start_date: Type.Optional(Type.String({ description: '开始日期 YYYYMMDD，如 20240101' })),

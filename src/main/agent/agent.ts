@@ -23,6 +23,7 @@ import {
   SESSION_CLEAR_CHANNEL,
   SESSION_LIST_FILES_CHANNEL,
   SESSION_OPEN_FILE_CHANNEL,
+  SESSION_READ_FILE_CHANNEL,
 } from '@shared/types/session';
 import {
   createSession,
@@ -455,6 +456,10 @@ export const createAgentIpc = () => {
     const err = await shell.openPath(filePath);
     if (err) throw new Error(err);
     return true;
+  });
+
+  ipcMain.handle(SESSION_READ_FILE_CHANNEL, async (_e, filePath: string) => {
+    return readFileText(filePath);
   });
 
   ipcMain.handle(WORKSPACE_PICK_CHANNEL, async (): Promise<string | null> => {

@@ -32,7 +32,7 @@ export function Markdown({ text }: { text: string }) {
   const html = md.render(text);
   return (
     <div
-      className="markdown-body text-[15px] leading-7 text-foreground"
+      className="markdown-body"
       // html:false 已转义原始 HTML，且链接协议已校验，可安全注入
       dangerouslySetInnerHTML={{ __html: html }}
     />

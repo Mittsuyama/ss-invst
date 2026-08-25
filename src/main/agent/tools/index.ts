@@ -4,6 +4,8 @@ import { loadPi } from '../pi';
 import { createSearchStockTool } from './search-stock';
 import { createGetQuoteTool } from './get-quote';
 import { createGetKlinesTool } from './get-klines';
+import { createGetKeyMovesTool } from './get-key-moves';
+import { createGetDailyAdjustedTool } from './get-daily-adjusted';
 import { createGetStkFactorsTool } from './get-stk-factors';
 import { createGetFinancialStatementsTool } from './get-financial-statements';
 import { createGetBusinessTool } from './get-business';
@@ -53,6 +55,8 @@ export async function createTools(ctx: AgentToolContext): Promise<AgentTool[]> {
     createSearchStockTool(Type),
     createGetQuoteTool(Type),
     createGetKlinesTool(Type),
+    createGetKeyMovesTool(Type, ctx.emit),
+    createGetDailyAdjustedTool(Type),
     createGetStkFactorsTool(Type),
     createGetFinancialStatementsTool(Type),
     createGetBusinessTool(Type),

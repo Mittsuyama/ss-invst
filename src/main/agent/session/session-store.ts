@@ -7,6 +7,7 @@ import type {
   SessionSnapshot,
   TodoItem,
 } from '@shared/types/session';
+import type { KeyMoveEntry } from '@shared/types/key-move';
 
 /** workspace 下的隐藏目录名 */
 const ROOT_DIR = '.ss-invst';
@@ -114,7 +115,7 @@ export function loadSession(workspacePath: string, id: string): SessionSnapshot 
       }
     }
   }
-  return { meta, messages };
+  return { meta, messages, keyMoves: readKeyMoves(workspacePath, id) };
 }
 
 /**
@@ -146,6 +147,7 @@ export function saveSession(
 export function clearSession(workspacePath: string, id: string): SessionMeta {
   ensureDir(sessionDir(workspacePath, id));
   fs.writeFileSync(jsonlPath(workspacePath, id), '', 'utf-8');
+  writeJsonAtomic(keyMovesPath(workspacePath, id), []);
   const meta = JSON.parse(fs.readFileSync(metaPath(workspacePath, id), 'utf-8')) as SessionMeta;
   meta.messageCount = 0;
   meta.updatedAt = Date.now();
@@ -352,4 +354,34 @@ export function readTask(workspacePath: string, id: string): string {
   const p = taskPath(workspacePath, id);
   if (!fs.existsSync(p)) return '';
   return fs.readFileSync(p, 'utf-8');
+}
+
+// ============================================================
+// 关键行情区间：key-moves.json（按 toolCallId 关联消息，历史还原）
+// ============================================================
+
+function keyMovesPath(workspacePath: string, id: string): string {
+  return path.join(sessionDir(workspacePath, id), 'key-moves.json');
+}
+
+/** 读取会话内所有关键行情区间（损坏时返回空数组） */
+export function readKeyMoves(workspacePath: string, id: string): KeyMoveEntry[] {
+  const p = keyMovesPath(workspacePath, id);
+  if (!fs.existsSync(p)) return [];
+  try {
+    const data = JSON.parse(fs.readFileSync(p, 'utf-8'));
+    return Array.isArray(data) ? (data as KeyMoveEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** 追加/覆盖一条关键行情区间（按 toolCallId 去重；同一次工具调用重跑覆盖旧结果） */
+export function appendKeyMoves(workspacePath: string, id: string, entry: KeyMoveEntry): void {
+  ensureDir(sessionDir(workspacePath, id));
+  const list = readKeyMoves(workspacePath, id);
+  const idx = list.findIndex((e) => e.toolCallId === entry.toolCallId);
+  if (idx >= 0) list[idx] = entry;
+  else list.push(entry);
+  writeJsonAtomic(keyMovesPath(workspacePath, id), list);
 }

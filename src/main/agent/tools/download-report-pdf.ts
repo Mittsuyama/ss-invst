@@ -14,7 +14,7 @@ export function createDownloadReportPdfTool(
     name: 'download_report_pdf',
     label: '下载财报PDF',
     description:
-      '根据 list_report_pdfs 返回的 publish_situations 下载对应的原始财务报告 PDF 到会话 uploads 目录（如 2024 年报）。下载后可用 read_file 提取文字。',
+      '[eastmoney] 根据 list_report_pdfs 返回的 publish_situations 下载对应的原始财务报告 PDF 到会话 uploads 目录（如 2024 年报）。下载后可用 read_file 提取文字。',
     parameters: Type.Object({
       secid: Type.String({ description: '股票 id，如 1.600519' }),
       publish_situations: Type.String({

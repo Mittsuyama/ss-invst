@@ -58,7 +58,7 @@ export const Agent = memo(() => {
 
   const loadSessionIntoChat = useCallback(async (ws: string, id: string) => {
     const snap = await window.session.load(ws, id);
-    setChatMessages(mapAgentMessages(snap.messages, ws, id));
+    setChatMessages(mapAgentMessages(snap.messages, ws, id, snap.keyMoves ?? []));
   }, []);
 
   // 订阅调试事件 + 会话投影事件（待办/决策/当前 skill）

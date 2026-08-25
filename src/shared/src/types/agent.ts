@@ -2,6 +2,7 @@
  * 投资 Agent 的协议类型（主进程 <-> 渲染进程 IPC）
  */
 import type { TodoItem } from './session';
+import type { KeyMove, KeyMoveSecurity } from './key-move';
 
 /** 支持的 LLM 提供商 */
 export type AgentProvider = 'deepseek' | 'openai' | 'anthropic' | 'custom';
@@ -91,7 +92,8 @@ export type AgentEvent =
   | { type: 'todo_update'; items: TodoItem[] }
   | { type: 'decision_update'; entry: { time: string; decision: string; reason?: string } }
   | { type: 'skill_applied'; name: string | null; description?: string }
-  | { type: 'file_saved'; file: SavedFileInfo };
+  | { type: 'file_saved'; file: SavedFileInfo }
+  | { type: 'key_moves'; security: KeyMoveSecurity; items: KeyMove[] };
 
 /** IPC channel 名称 */
 export const AGENT_EVENT_CHANNEL = 'agent:event';

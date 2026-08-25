@@ -1,4 +1,11 @@
-import { registerOverlay, registerFigure, registerIndicator, IndicatorSeries } from 'klinecharts';
+import {
+  registerOverlay,
+  registerFigure,
+  registerIndicator,
+  IndicatorSeries,
+  PolygonType,
+  type OverlayFigure,
+} from 'klinecharts';
 import { BarSpace } from '@/types/global';
 
 export const STROKE_COLOR = '#888888DD';
@@ -70,6 +77,120 @@ registerOverlay({
       },
       styles: overlay.styles,
     };
+  },
+});
+
+export interface KeyMoveAttrs {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface KeyMoveStyles {
+  color: string;
+}
+
+// 关键行情区间：半透明填充 + 边框的矩形，圈出主升/主跌段
+registerFigure<KeyMoveAttrs, KeyMoveStyles>({
+  name: 'keyMove',
+  draw: (ctx, attrs, styles) => {
+    const { x1, y1, x2, y2 } = attrs;
+    const { color } = styles;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = `${color}22`;
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+  },
+  checkEventOn: () => false,
+});
+
+registerOverlay({
+  name: 'keyMove',
+  totalStep: 2,
+  lock: true,
+  needDefaultPointFigure: true,
+  needDefaultXAxisFigure: true,
+  needDefaultYAxisFigure: true,
+  createPointFigures: ({ coordinates, overlay }) => {
+    return {
+      type: 'keyMove',
+      attrs: {
+        x1: coordinates[0].x,
+        y1: coordinates[0].y,
+        x2: coordinates[1].x,
+        y2: coordinates[1].y,
+      },
+      styles: overlay.styles,
+    };
+  },
+});
+
+// pinbar 回测区间：深色边框 + 浅色底（复用内置 rect figure）
+registerOverlay({
+  name: 'pinbarRange',
+  totalStep: 2,
+  lock: true,
+  needDefaultPointFigure: false,
+  needDefaultXAxisFigure: false,
+  needDefaultYAxisFigure: false,
+  createPointFigures: ({ coordinates, overlay, xAxis }) => {
+    const [p1, p2] = coordinates;
+    const color = (overlay.styles?.color as string) ?? '#888888';
+    // p1 是 pinbar 中心、p2 是止损 K 线中心；各自向外扩半根 K 线，
+    // 让矩形左起 pinbar 左侧边、右到止损 K 线右侧边，覆盖完整两根 K 线
+    const halfBar = xAxis ? (xAxis.convertToPixel(1) - xAxis.convertToPixel(0)) / 2 : 0;
+    const startX = p1.x - halfBar;
+    const endX = p2.x + halfBar;
+    const topY = Math.min(p1.y, p2.y);
+    const bottomY = Math.max(p1.y, p2.y);
+    const text = typeof overlay.extendData === 'string' ? overlay.extendData : '';
+
+    const figures: OverlayFigure[] = [
+      {
+        type: 'rect',
+        attrs: {
+          x: startX,
+          y: topY,
+          width: endX - startX,
+          height: bottomY - topY,
+        },
+        styles: {
+          style: PolygonType.StrokeFill,
+          color: `${color}22`,
+          borderColor: color,
+          borderSize: 1.5,
+        },
+      },
+    ];
+
+    // 盈亏比例文本：矩形下方、右对齐，文字颜色与边框一致，无底色
+    if (text) {
+      figures.push({
+        type: 'text',
+        attrs: {
+          x: endX,
+          y: bottomY + 4,
+          text,
+          align: 'right',
+          baseline: 'top',
+        },
+        styles: {
+          color,
+          size: 12,
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+        },
+      });
+    }
+
+    return figures;
   },
 });
 

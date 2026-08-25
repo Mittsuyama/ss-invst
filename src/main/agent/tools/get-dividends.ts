@@ -6,7 +6,7 @@ export function createGetDividendsTool(Type: PiType): AgentTool {
   return {
     name: 'get_dividends',
     label: '分红历史',
-    description: '获取公司近年分红送股记录。',
+    description: '[eastmoney] 获取公司近年分红送股记录。',
     parameters: Type.Object({
       secid: Type.String({ description: '股票 id，如 1.600519' }),
       years: Type.Optional(Type.Integer({ default: 5, minimum: 1, maximum: 20 })),

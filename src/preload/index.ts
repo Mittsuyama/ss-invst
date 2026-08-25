@@ -21,9 +21,11 @@ import {
   SESSION_CLEAR_CHANNEL,
   SESSION_LIST_FILES_CHANNEL,
   SESSION_OPEN_FILE_CHANNEL,
+  SESSION_READ_FILE_CHANNEL,
   type SessionMeta,
   type SessionSnapshot,
   type SessionFileList,
+  type SessionReadFileResult,
 } from '@shared/types/session'
 
 // Custom APIs for renderer
@@ -57,6 +59,8 @@ const session = {
   listFiles: (workspacePath: string, id: string): Promise<SessionFileList> =>
     ipcRenderer.invoke(SESSION_LIST_FILES_CHANNEL, workspacePath, id),
   openFile: (filePath: string): Promise<boolean> => ipcRenderer.invoke(SESSION_OPEN_FILE_CHANNEL, filePath),
+  readFile: (filePath: string): Promise<SessionReadFileResult> =>
+    ipcRenderer.invoke(SESSION_READ_FILE_CHANNEL, filePath),
 }
 
 export type AgentBridge = typeof agent

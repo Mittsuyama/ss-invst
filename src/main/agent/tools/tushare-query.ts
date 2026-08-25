@@ -7,7 +7,7 @@ export function createTushareQueryTool(Type: PiType): AgentTool {
     name: 'tushare_query',
     label: 'Tushare 数据',
     description:
-      '调用 Tushare 通用接口获取补充数据。常用 api_name：daily（日线）、daily_basic（每日指标：市值/PE/PB/换手率）、income（利润表）、balancesheet（资产负债表）、cashflow（现金流量表）、fina_indicator（财务指标：ROE/毛利率等）、dividend（分红）、stock_basic（股票列表）。params 传接口参数（如 ts_code、start_date、end_date），fields 传需要的字段（逗号分隔，可留空取全部）。',
+      '[tushare] 调用 Tushare 通用接口获取补充数据。常用 api_name：daily（日线）、daily_basic（每日指标：市值/PE/PB/换手率）、income（利润表）、balancesheet（资产负债表）、cashflow（现金流量表）、fina_indicator（财务指标：ROE/毛利率等）、dividend（分红）、stock_basic（股票列表）。params 传接口参数（如 ts_code、start_date、end_date），fields 传需要的字段（逗号分隔，可留空取全部）。',
     parameters: Type.Object({
       api_name: Type.String({
         description: 'Tushare 接口名，如 daily_basic / fina_indicator / income',

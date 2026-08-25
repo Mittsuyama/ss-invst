@@ -140,7 +140,7 @@
 @layer components {
   /* 超长无空格文本（如英文、长串数字）强制换行，避免出现横向滚动条 */
   .markdown-body {
-    @apply break-words;
+    @apply break-words select-text text-[15px] leading-6 text-foreground;
   }
   /* 代码块保留自身横向滚动，不因继承而换行 */
   .markdown-body pre {
@@ -162,7 +162,7 @@
     @apply text-sm font-semibold mt-2 mb-1;
   }
   .markdown-body p {
-    @apply my-2 leading-relaxed;
+    @apply my-3;
   }
   .markdown-body a {
     @apply text-blue-500 underline;
@@ -192,10 +192,13 @@
     @apply w-full border-collapse my-2;
   }
   .markdown-body th {
-    @apply border border-border bg-muted px-2 py-1 text-left font-semibold whitespace-nowrap;
+    @apply border border-border bg-muted px-2 py-1 text-left font-semibold align-top;
+    /* 单元格允许在任意字符处换行（含长串数字/URL），并参与最小宽度计算，避免撑出横向滚动条 */
+    overflow-wrap: anywhere;
   }
   .markdown-body td {
-    @apply border border-border px-2 py-1 whitespace-nowrap;
+    @apply border border-border px-2 py-1 align-top;
+    overflow-wrap: anywhere;
   }
   .markdown-body tbody tr:nth-child(even) {
     @apply bg-muted/40;
