@@ -12,11 +12,15 @@ export function createComputeFactorTool(Type: PiType): AgentTool {
     description: `[复合：eastmoney K线 + 本地计算] 拉取 K 线并用指定因子计算买卖点信号。可用因子：${describeFactors()}。period 可选 day/week/month，limit 是 K 线根数（默认 250），params 传该因子的参数（省略用默认值）。`,
     parameters: Type.Object({
       secid: Type.String({ description: '股票 id，如 1.600519' }),
-      factor: Type.String({ description: '因子名，如 macd_cross / ma_cross / rsi_reversal / boll_breakout' }),
+      factor: Type.String({
+        description: '因子名，如 macd_cross / ma_cross / rsi_reversal / boll_breakout',
+      }),
       period: Type.Optional(PeriodEnum),
       limit: Type.Optional(Type.Integer({ default: 250, minimum: 30, maximum: 1000 })),
       params: Type.Optional(
-        Type.Record(Type.String(), Type.Number(), { description: '因子参数，如 {short:5, long:20}' }),
+        Type.Record(Type.String(), Type.Number(), {
+          description: '因子参数，如 {short:5, long:20}',
+        }),
       ),
     }),
     execute: async (_id, p) => {
@@ -28,9 +32,15 @@ export function createComputeFactorTool(Type: PiType): AgentTool {
         params?: Record<string, number>;
       };
       const def = FACTORS[args.factor];
-      if (!def) throw new Error(`未知因子 ${args.factor}，可用：${Object.keys(FACTORS).join(', ')}`);
+      if (!def)
+        throw new Error(`未知因子 ${args.factor}，可用：${Object.keys(FACTORS).join(', ')}`);
       const { rows } = await getKlines(args.secid, args.period ?? 'day', args.limit ?? 250);
-      const bars: FactorBar[] = rows.map((r) => ({ date: r.date, close: r.close, high: r.high, low: r.low }));
+      const bars: FactorBar[] = rows.map((r) => ({
+        date: r.date,
+        close: r.close,
+        high: r.high,
+        low: r.low,
+      }));
       const signals = def.fn(bars, args.params ?? {});
       const buyCount = signals.filter((s) => s.type === 'buy').length;
       const sellCount = signals.filter((s) => s.type === 'sell').length;

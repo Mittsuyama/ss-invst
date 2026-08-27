@@ -11,8 +11,8 @@
  *
  * ## 二、有效性判断（依赖左眼 = 左侧相邻 K 线）
  * 以下条件同时满足才视为「有效 pinbar」：
- * 1. 显著：左眼总长度（最高 - 最低）< pinbar 总长度（最高 - 最低）。
- * 2. 左眼包含 pinbar 实体：左眼最高 > pinbar「开/收盘孰高」，
+ * 1. 显眼：左眼总长度（最高 - 最低）< pinbar 总长度（最高 - 最低）。
+ * 2. 拒绝跳空：左眼包含 pinbar 实体：左眼最高 > pinbar「开/收盘孰高」，
  *    且左眼最低 < pinbar「开/收盘孰低」。
  *
  * ## 三、历史回测与移动止损
@@ -21,7 +21,7 @@
  *     - 激进（aggressive）：pinbar 极值（多头 = 最低价，空头 = 最高价）。
  *     - 保守（conservative）：影线的 61.8% 处，即距极值占整条影线的 38.2%。
  * - 第 i 天：若当天触发止损线则结束；否则止损位
- *       s(i) = s(i-1) * 6/7 + p(i) * 1/7，
+ *       s(i) = s(i-1) * 1/2 + p(i) * 1/2，
  *     其中 p(i) 做空取最高价、做多取最低价。
  * - 盈亏比例：多头 (结束价 - 收盘价) / 收盘价，空头 (收盘价 - 结束价) / 收盘价。
  *
@@ -31,7 +31,7 @@
  * - 进行中（in-progress）：未触发止损，但 K 线已到最后一根。
  *
  * 绘制的区间矩形（深色边框 + 浅色底）从左眼最左侧起、到止损最右侧结束，
- * 颜色：失败 = 灰、成功 = 绿、进行中 = 黄。
+ * 颜色：失败 = 灰、成功 = 蓝、进行中 = 黄。
  * ============================================================================
  */
 
@@ -66,10 +66,10 @@ export interface PinbarRecord {
 
 const DEFAULT_WICK_RATIO = 2 / 3;
 
-/** 区间矩形颜色：失败 = 灰、成功 = 绿、进行中 = 黄（浅色底由 figure 派生） */
+/** 区间矩形颜色：失败 = 灰、成功 = 蓝、进行中 = 黄（浅色底由 figure 派生） */
 const PINBAR_RANGE_COLORS: Record<PinbarResultType, string> = {
   failed: '#8c8c8c',
-  success: '#00a870',
+  success: '#2196f3',
   'in-progress': '#e6b800',
 };
 
@@ -91,11 +91,11 @@ function detectDirection(item: PriceAndVolumeItem, wickRatio: number): PinbarDir
 }
 
 function isValidPinbar(pinbar: PriceAndVolumeItem, leftEye: PriceAndVolumeItem): boolean {
-  // 1. 显著：左眼总长度 < pinbar 总长度
+  // 1. 显眼：左眼总长度 < pinbar 总长度
   if (leftEye.high - leftEye.low >= pinbar.high - pinbar.low) {
     return false;
   }
-  // 2. 左眼包含 pinbar 实体
+  // 2. 拒绝跳空：左眼包含 pinbar 实体
   const bodyHigh = Math.max(pinbar.open, pinbar.close);
   const bodyLow = Math.min(pinbar.open, pinbar.close);
   return leftEye.high > bodyHigh && leftEye.low < bodyLow;
@@ -138,7 +138,7 @@ function runBacktest(
           stopPrice: stop,
         };
       }
-      stop = stop * (6 / 7) + bar.low * (1 / 7);
+      stop = stop * (1 / 2) + bar.low * (1 / 2);
     } else {
       if (bar.high >= stop) {
         const profit = (entry - stop) / entry;
@@ -149,7 +149,7 @@ function runBacktest(
           stopPrice: stop,
         };
       }
-      stop = stop * (6 / 7) + bar.high * (1 / 7);
+      stop = stop * (1 / 2) + bar.high * (1 / 2);
     }
   }
 

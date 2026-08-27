@@ -39,10 +39,9 @@ export const Chart = memo(
     const [unchangableOverlayVisible] = useState(overlayVisible);
     const [unchangableBarSpace] = useState(barSpaceInPeriod[period]);
     const chartDivRef = useRef<HTMLDivElement>(null);
-    // 是否已为当前图表计算并绘制过 chanlun/pinbar overlay（懒加载标记）
-    const overlaysDrawnRef = useRef(false);
-    // 上一次已应用到图上的 overlayVisible，用于判断是否真正发生变化
-    const prevOverlayVisibleRef = useRef(overlayVisible);
+    // 当前图表实例是否已分别计算并绘制过 chanlun / pinbar overlay（懒计算标记）
+    const chanlunDrawnRef = useRef(false);
+    const pinbarDrawnRef = useRef(false);
 
     const { data: list } = useLatestRequest(() => fetchKLines(id, period), [id, period]);
 
@@ -65,9 +64,9 @@ export const Chart = memo(
       }
     }, [autoSelectLast, last, setCurrent]);
 
-    // 指标显影 + chanlun/pinbar overlay 懒加载
+    // 指标显影 + chanlun/pinbar overlay 懒计算
     useEffect(() => {
-      if (!chart) {
+      if (!chart || !list) {
         return;
       }
       const indicatorName = ZX_TRENDS.includes(period) ? 'ZX-TREND' : 'MA';
@@ -76,34 +75,26 @@ export const Chart = memo(
         visible: !overlayVisible,
       });
 
-      const overlayVisibleChanged = overlayVisible !== prevOverlayVisibleRef.current;
-
-      if (!overlaysDrawnRef.current) {
-        // 尚未绘制：pinbar 模式（overlayVisible=false）需立即渲染；
-        // 缠论模式（默认 true）懒加载，等 overlayVisible 变化时再计算
-        if (!overlayVisible || overlayVisibleChanged) {
-          if (list) {
-            chart.createOverlay([
-              ...buildChanlunOverlays(list, period, overlayVisible),
-              ...buildPinbarOverlays(list, { stopMode: PINBAR_STOP_MODE }, !overlayVisible),
-            ]);
-            overlaysDrawnRef.current = true;
-          }
-        }
-      } else if (overlayVisibleChanged) {
-        // 已绘制：只切换 visible（缠论与 pinbar 互斥）
-        chart.getOverlays().forEach((overlay) => {
-          const targetVisible = overlay.name === 'pinbarRange' ? !overlayVisible : overlayVisible;
-          if (overlay.visible !== targetVisible) {
-            chart.overrideOverlay({
-              id: overlay.id,
-              visible: targetVisible,
-            });
-          }
-        });
+      // 懒计算：当前需要显示的那一组还没绘制时，先计算并绘制（visible=true）
+      if (overlayVisible && !chanlunDrawnRef.current) {
+        chart.createOverlay(buildChanlunOverlays(list, period, true));
+        chanlunDrawnRef.current = true;
+      }
+      if (!overlayVisible && !pinbarDrawnRef.current) {
+        chart.createOverlay(buildPinbarOverlays(list, { stopMode: PINBAR_STOP_MODE }, true));
+        pinbarDrawnRef.current = true;
       }
 
-      prevOverlayVisibleRef.current = overlayVisible;
+      // 单次遍历，按组设置显隐（chanlun 与 pinbar 互斥）
+      chart.getOverlays().forEach((overlay) => {
+        const targetVisible = overlay.name === 'pinbarRange' ? !overlayVisible : overlayVisible;
+        if (overlay.visible !== targetVisible) {
+          chart.overrideOverlay({
+            id: overlay.id,
+            visible: targetVisible,
+          });
+        }
+      });
       // list 在闭包中始终为最新数据（chart 非空时 list 必非空），无需加入依赖
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [chart, overlayVisible, period]);
@@ -115,8 +106,9 @@ export const Chart = memo(
       }
       const chart = init(`${CHART_ID_PREFIX}-${id}-${period}`);
       if (chart) {
-        // 新图表实例还没有 overlay，重置懒加载标记
-        overlaysDrawnRef.current = false;
+        // 新图表实例还没有 overlay，重置懒计算标记
+        chanlunDrawnRef.current = false;
+        pinbarDrawnRef.current = false;
         chart.applyNewData(list);
         chart.setStyles(buildChartStyles(theme, !!mini));
         setupIndicators(chart, {

@@ -16,7 +16,7 @@ params:
 
 1. **确定标的**：get_key_moves 的 query 直接接受股票名称 / 代码 / 拼音 / secid（内部经东财搜索归一化，无需先 search_stock）。若用户给多只股票，逐只处理。
 2. **识别区间**：对每只股票调用 get_key_moves(query)，得到按 |涨跌幅| 降序的关键区间（起止日期、起止价、总涨跌幅）。
-3. **逐段复盘**：对每个关键区间，用 web_search 检索该时段的公司新闻 / 公告 / 行业与政策事件，判断驱动因素；可选再用 get_financial_statements 核对该区间起点附近的财报（report_date）是否与行情起点吻合，判断是否业绩驱动。驱动因素分类与检索关键词见 references/drivers.md（用 read_file 读）。
+3. **逐段复盘**：对每个关键区间，用 get_financial_statements 核对该区间起点附近的财报（report_date）是否与行情起点吻合，判断是否业绩驱动；也可结合 get_business / get_dividends 等基本面数据交叉印证。当前不提供网络搜索，无法检索该时段的新闻 / 公告 / 行业事件，非业绩驱动且无基本面佐证的区间标「原因不明 / 证据不足」。驱动因素分类见 references/drivers.md（用 read_file 读）。
 4. **汇总**：每段给出「时间区间 + 总涨跌幅 + 驱动因素 + 证据来源」；无法确认原因的标「原因不明 / 证据不足」，不硬凑。
 5. **保存**：按 templates/report.md 结构，用 save_file 保存到 output/（文件名如「公司名-关键行情区间复盘-YYYY-MM-DD.md」）。
 
@@ -24,7 +24,7 @@ params:
 
 - 开始前用 update_todo 列出步骤（定标的、识别区间、逐段复盘、写报告、保存）；
 - 关键选择（目标股票、重点复盘的前 N 段、驱动因素结论口径）用 decide 记录理由；
-- 每步校验：get_key_moves 返回空/报错 → 换 query（名称/代码/拼音再试）或确认标的是否正确；web_search 无结果 → 该段标「证据不足」；get_financial_statements 为空 → 跳过基本面核对并注明缺数据；
+- 每步校验：get_key_moves 返回空/报错 → 换 query（名称/代码/拼音再试）或确认标的是否正确；get_financial_statements 为空 → 跳过基本面核对并注明缺数据；
 - 失败时 read_todo 恢复进度后重试或换方案；
 - 完成后 update_todo 标 done。
 

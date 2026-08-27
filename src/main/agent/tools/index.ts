@@ -16,7 +16,6 @@ import { createSaveFileTool } from './save-file';
 import { createUpdateTodoTool } from './update-todo';
 import { createReadTodoTool } from './read-todo';
 import { createDownloadUrlTool } from './download-url';
-import { createWebSearchTool } from './web-search';
 import { createComputeFactorTool } from './compute-factor';
 import { createAnalyzeFactorTool } from './analyze-factor';
 import { createListSkillsTool } from './list-skills';
@@ -47,7 +46,6 @@ export async function createTools(ctx: AgentToolContext): Promise<AgentTool[]> {
     createUseSkillTool(Type, ctx.applySkill),
     createRunScriptTool(Type),
     createDownloadUrlTool(Type, ctx.emit),
-    createWebSearchTool(Type),
     createComputeFactorTool(Type),
     createAnalyzeFactorTool(Type),
     createListReportPdfsTool(Type),

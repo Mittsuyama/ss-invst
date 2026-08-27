@@ -21,8 +21,7 @@ params:
 3. 用 get_financial_statements 获取近 5 年三大报表与领先指标（毛利率/净利率/扣非 ROE/周转天数等）。
 4. 用 get_business 看主营构成，用 get_dividends 看分红历史。
 5. 如需年报定性信息：先用 download_url 下载年报 PDF（东方财富/巨潮资讯的链接），再用 read_file 提取文字，重点看管理层讨论与分析、审计意见、经营风险。
-6. 用 web_search 补充行业动态、公司新闻、政策等网络信息。
-7. 综合上述数据与信息生成 Markdown 投研报告，并用 save_file 保存（文件名如「公司名-日期.md」）。
+6. 综合上述数据与信息生成 Markdown 投研报告，并用 save_file 保存（文件名如「公司名-日期.md」）。
 
 ## 报告要点
 
@@ -36,7 +35,7 @@ params:
 
 ## 执行循环
 
-- 开始前用 update_todo 列出步骤（确定股票、取数、读年报、网络信息、写报告）；
+- 开始前用 update_todo 列出步骤（确定股票、取数、读年报、写报告）；
 - 关键选择（目标股票、报告口径）用 decide 记录理由；
 - 每步执行后校验：数据缺失/接口报错时，改用 read_todo 恢复进度后重试或换方案；
 - 全部完成后 update_todo 标 done，用 save_file 把报告保存到 output 目录。

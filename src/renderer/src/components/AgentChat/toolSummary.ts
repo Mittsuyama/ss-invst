@@ -33,8 +33,6 @@ export function summarizeToolArgs(name: string, args: unknown): string {
       return str(a.filename);
     case 'download_url':
       return basename(str(a.url));
-    case 'web_search':
-      return str(a.query);
     case 'compute_factor':
     case 'analyze_factor':
       return `${str(a.secid)} · ${str(a.factor)}`;

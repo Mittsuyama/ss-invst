@@ -229,12 +229,8 @@ export const Detail = memo((props: DetailProps) => {
               style={{ borderRightWidth: 0 }}
               onClick={() => setOverlayVisible((pre) => !pre)}
             >
-              {overlayVisible ? (
-                <SquareSigma className="*:[rect]:stroke-red-500 *:[path]:stroke-white fill-red-500" />
-              ) : (
-                <SquareSigma />
-              )}
-              缠论
+              <SquareSigma />
+              {overlayVisible ? '缠论' : 'pinbar'}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

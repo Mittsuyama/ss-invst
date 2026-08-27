@@ -7,7 +7,7 @@
 | 工具 | 职责 | 分组 |
 | --- | --- | --- |
 | `update_todo` / `read_todo` | 任务清单读写（本轮改语义，见 task-loop.md） | 编排 |
-| `download_url` / `web_search` | 下载 / 网络搜索 | 通用能力 |
+| `download_url` | 下载 | 通用能力 |
 | `compute_factor` / `analyze_factor` | 因子信号 / 回测统计 | 计算层 |
 | `search_stock` / `get_quote` / `get_klines` / `get_financial_statements` / `get_business` / `get_dividends` | 东财数据 | 取数 |
 | `tushare_query` | tushare 取数 | 取数 |

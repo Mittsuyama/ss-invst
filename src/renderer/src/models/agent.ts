@@ -59,7 +59,6 @@ export const TOOL_LABELS: Record<string, string> = {
   use_skill: '选定技能',
   run_script: '执行脚本',
   download_url: '下载文件',
-  web_search: '网络搜索',
   compute_factor: '计算因子信号',
   analyze_factor: '因子回测统计',
   search_stock: '搜索股票',
