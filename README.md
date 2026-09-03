@@ -1,5 +1,7 @@
 # ss-invst
 
+![Application Image](./app.png)
+
 An Electron application with React and TypeScript
 
 ## Recommended IDE Setup
