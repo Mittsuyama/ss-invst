@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
@@ -19,15 +19,9 @@ import {
 import { GREEN_COLOR, RED_COLOR } from '@/lib/constants';
 import { buildConditionStockQuery } from '@/lib/condition-stock';
 import { fetchConditionStockList } from '@renderer/api/stock';
-import {
-  startTickDetailsSse,
-  stopTickDetailsSse,
-  restartTickDetailsSse,
-  onTickDetailsData,
-  onTickDetailsError,
-  parseSseResponse,
-  type TrendItem,
-} from '@/api/tick-details';
+import { useEastMoneyTrends } from '@/hooks/useEastMoneyTrends';
+import { useTencentTrends } from '@/hooks/useTencentTrends';
+import type { TrendSourceKind } from '@/hooks/trend-source';
 import {
   favStockIdListAtom,
   holdQuantityAtom,
@@ -94,6 +88,9 @@ const sortConfigs: Record<
   marketValue: { label: '总市值(亿)', getValue: (item) => item.totalMarketValue },
 };
 
+// 分时数据源开关：'tencent'（腾讯轮询，默认）| 'eastmoney'（东财 SSE push）
+const TREND_SOURCE: TrendSourceKind = 'tencent';
+
 export const Choice = memo(() => {
   const watchIdList = useAtomValue(watchStockIdListAtom);
   const holdIdList = useAtomValue(favStockIdListAtom);
@@ -110,17 +107,6 @@ export const Choice = memo(() => {
   const [editingQuantityId, setEditingQuantityId] = useState<string | null>(null);
   const [holdQuantity, setHoldQuantity] = useAtom(holdQuantityAtom);
 
-  // 分时数据状态：每只股票的 trends / prePrice / 状态
-  const [trendsMap, setTrendsMap] = useState<Record<string, TrendItem[]>>({});
-  const [prePriceMap, setPrePriceMap] = useState<Record<string, number>>({});
-  const [tickStatus, setTickStatus] = useState<Record<string, 'loading' | 'ok' | 'error'>>({});
-
-  // 用 ref 同步 prePriceMap 的最新值，避免 SSE 回调闭包捕获到过期的 prePriceMap
-  const prePriceMapRef = useRef(prePriceMap);
-  useEffect(() => {
-    prePriceMapRef.current = prePriceMap;
-  });
-
   const idList = useMemo(() => {
     switch (favoriteType) {
       case 'watch':
@@ -133,6 +119,39 @@ export const Choice = memo(() => {
   }, [favoriteType, holdIdList, qualityIdList, watchIdList]);
 
   const isEmpty = idList.length < 1;
+
+  // 分时数据：腾讯轮询 / 东财 SSE push，二选一（开关见文件顶部 TREND_SOURCE）
+  const isTencent = TREND_SOURCE === 'tencent';
+  const tencentTrends = useTencentTrends(idList, isTencent);
+  const eastMoneyTrends = useEastMoneyTrends(idList, !isTencent);
+  const { trendsMap, prePriceMap, tickStatus, errorTickIds, retryTick, retryAllTicks } = isTencent
+    ? tencentTrends
+    : eastMoneyTrends;
+
+  // 分时数据到位后，反向同步 records 的最新价 / 涨跌幅
+  useEffect(() => {
+    setRecords((prev) => {
+      let next = prev;
+      for (const id of idList) {
+        const trends = trendsMap[id];
+        const lastTrend = trends?.[trends.length - 1];
+        if (!lastTrend || Number.isNaN(lastTrend.close)) continue;
+
+        const basePrice = prePriceMap[id];
+        const idx = next.findIndex((r) => r.id === id);
+        if (idx < 0 || next[idx].price === lastTrend.close) continue;
+
+        const chg =
+          basePrice !== undefined && basePrice !== 0
+            ? ((lastTrend.close - basePrice) / basePrice) * 100
+            : next[idx].chg;
+
+        next = next.slice();
+        next[idx] = { ...next[idx], price: lastTrend.close, chg };
+      }
+      return next === prev ? prev : next;
+    });
+  }, [trendsMap, prePriceMap, idList]);
 
   const fetchRecords = useMemoizedFn(async () => {
     if (isEmpty) {
@@ -174,87 +193,6 @@ export const Choice = memo(() => {
     );
     return () => window.clearInterval(timer);
   }, [fetchRecords, isEmpty]);
-
-  // 统一管理所有股票的分时 SSE 订阅
-  useEffect(() => {
-    if (isEmpty) {
-      setTrendsMap({});
-      setPrePriceMap({});
-      setTickStatus({});
-      return;
-    }
-
-    // 清理不在当前列表中的旧数据
-    setTrendsMap((prev) => {
-      const next: Record<string, TrendItem[]> = {};
-      for (const id of idList) next[id] = prev[id] ?? [];
-      return next;
-    });
-    setPrePriceMap((prev) => {
-      const next: Record<string, number> = {};
-      for (const id of idList) if (id in prev) next[id] = prev[id];
-      return next;
-    });
-    setTickStatus((prev) => {
-      const next: Record<string, 'loading' | 'ok' | 'error'> = {};
-      for (const id of idList) next[id] = prev[id] ?? 'loading';
-      return next;
-    });
-
-    // 启动所有 SSE 订阅
-    const unsubs: Array<() => void> = [];
-    for (const id of idList) {
-      startTickDetailsSse(id);
-
-      const offData = onTickDetailsData(id, (res) => {
-        const { prePrice: pp, trends: newTrends } = parseSseResponse(res);
-        if (pp !== undefined) {
-          setPrePriceMap((prev) => (prev[id] === pp ? prev : { ...prev, [id]: pp }));
-        }
-        if (newTrends.length > 0) {
-          setTrendsMap((prev) => {
-            const existing = prev[id] ?? [];
-            const map = new Map(existing.map((t) => [t.timestamp, t]));
-            for (const t of newTrends) map.set(t.timestamp, t);
-            const merged = Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
-            return prev[id] === merged ? prev : { ...prev, [id]: merged };
-          });
-          setTickStatus((prev) => (prev[id] === 'ok' ? prev : { ...prev, [id]: 'ok' }));
-
-          // 反向更新 records 里的 price 和涨跌幅
-          const lastTrend = newTrends[newTrends.length - 1];
-          if (lastTrend && !Number.isNaN(lastTrend.close)) {
-            // 优先用本次 SSE 推上来的 prePrice，其次回退到 ref 里的最新值
-            const basePrice = pp ?? prePriceMapRef.current[id];
-            setRecords((prev) => {
-              const idx = prev.findIndex((r) => r.id === id);
-              if (idx < 0 || prev[idx].price === lastTrend.close) return prev;
-              const chg =
-                basePrice !== undefined && basePrice !== 0
-                  ? ((lastTrend.close - basePrice) / basePrice) * 100
-                  : prev[idx].chg;
-              const next = prev.slice();
-              next[idx] = { ...next[idx], price: lastTrend.close, chg };
-              return [...next];
-            });
-          }
-        }
-      });
-
-      const offError = onTickDetailsError(id, () => {
-        setTickStatus((prev) => (prev[id] === 'error' ? prev : { ...prev, [id]: 'error' }));
-      });
-
-      unsubs.push(offData, offError);
-    }
-
-    return () => {
-      unsubs.forEach((off) => off());
-      for (const id of idList) {
-        stopTickDetailsSse(id);
-      }
-    };
-  }, [idList, isEmpty]);
 
   const holdingSummary = useMemo(() => {
     let totalValue = 0;
@@ -359,29 +297,6 @@ export const Choice = memo(() => {
     setCurrent(sortedRecords[currentIndex + 1]);
   });
 
-  const onRetryTick = useMemoizedFn((id: string) => {
-    setTickStatus((prev) => ({ ...prev, [id]: 'loading' }));
-    restartTickDetailsSse(id);
-  });
-
-  const errorTickIds = useMemo(
-    () =>
-      Object.entries(tickStatus)
-        .filter(([, s]) => s === 'error')
-        .map(([id]) => id),
-    [tickStatus],
-  );
-
-  const onRetryAllTicks = useMemoizedFn(() => {
-    if (errorTickIds.length === 0) return;
-    setTickStatus((prev) => {
-      const next = { ...prev };
-      for (const id of errorTickIds) next[id] = 'loading';
-      return next;
-    });
-    for (const id of errorTickIds) restartTickDetailsSse(id);
-  });
-
   const miniChartRender = (record: FilterItem) => {
     const status = tickStatus[record.id];
     if (status === 'loading') {
@@ -391,7 +306,7 @@ export const Choice = memo(() => {
       return (
         <RefreshCw
           className="size-4 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-          onClick={() => onRetryTick(record.id)}
+          onClick={() => retryTick(record.id)}
         />
       );
     }
@@ -459,7 +374,7 @@ export const Choice = memo(() => {
             <Button
               size="sm"
               variant="outline"
-              onClick={onRetryAllTicks}
+              onClick={retryAllTicks}
               disabled={errorTickIds.length === 0}
             >
               <RefreshCw />
