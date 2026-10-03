@@ -37,6 +37,7 @@ export function createComputeFactorTool(Type: PiType): AgentTool {
       const { rows } = await getKlines(args.secid, args.period ?? 'day', args.limit ?? 250);
       const bars: FactorBar[] = rows.map((r) => ({
         date: r.date,
+        open: r.open,
         close: r.close,
         high: r.high,
         low: r.low,

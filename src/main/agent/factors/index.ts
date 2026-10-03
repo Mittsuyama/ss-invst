@@ -5,6 +5,7 @@ import { computeMA, computeBOLL } from '../data/indicators';
 /** 因子计算所需的最小 K 线字段 */
 export interface FactorBar {
   date: string;
+  open: number;
   close: number;
   high: number;
   low: number;
@@ -15,6 +16,8 @@ export interface FactorSignal {
   type: 'buy' | 'sell';
   price: number;
   reason: string;
+  /** 因子专属的结构化附注（如 pinbar 的移动止损结局），analyze_factor 会按 meta.result 聚合 */
+  meta?: Record<string, number | string>;
 }
 
 export interface FactorParam {
