@@ -73,6 +73,7 @@ export interface PinbarRecord {
   endIndex: number;
   profit: number;
   result: PinbarResultType;
+  /** 结束时的止损位（详见 3.5 的语义说明） */
   stopPrice: number;
 }
 
@@ -136,10 +137,12 @@ FACTORS.pinbar = {
 | `date` | `bars[record.index].date`（入场日 = pinbar 当日） |
 | `type` | `direction === 'long' ? 'buy' : 'sell'` |
 | `price` | `bars[record.index].close`（入场价 = pinbar 收盘价，与回测口径一致） |
-| `reason` | 方向 + 初始止损价 + 结局（成功/失败/进行中、盈亏、结束日） |
+| `reason` | 方向 + 结束止损位（`record.stopPrice`）+ 结局（成功/失败/进行中、盈亏、结束日） |
 | `meta` | `{ direction, stopPrice, endDate: bars[record.endIndex].date, result, profit }` |
 
-`reason` 与 `meta` 都带结局信息是刻意的：`compute_factor` 的返回要能让模型直接看到止损价与结局，而 `analyze_factor` 需要结构化字段才能可靠聚合。
+`reason` 与 `meta` 都带结局信息是刻意的：`compute_factor` 的返回要能让模型直接看到止损位与结局，而 `analyze_factor` 需要结构化字段才能可靠聚合。
+
+**`PinbarRecord.stopPrice` 的语义（实现阶段核实并修订）：** 它是**结束时的止损位**，不是初始止损 s(0)。`runBacktest` 在退出时返回当时已被移动止损抬到的 `stop`（`result === 'in-progress'` 时则是最后一根 K 线时的止损位）。原文件里 `/** 初始止损价 s(0) */` 的注释是错的，搬迁时一并改正为如实的描述（纯注释修订，零行为变更）。因此 `reason` 一律表述为"结束止损位"，不得写成"初始止损价"；初始止损 s(0) 的计算规则仍见模块头部注释第三节，该节描述是对的。
 
 pinbar 产出的信号仍只是普通 `buy` / `sell`（`type` 只有这两个取值），因此 `analyze_factor` 现有的 `evaluateSignals`（`factors/backtest.ts`）的 `holdBars` 事件回测**无需任何改动**即可套用；`meta` 只是并列的附加信息，不参与其计算。
 
@@ -175,7 +178,7 @@ metaSummary: {
 
 1. `npm run typecheck`（node + web 两侧都要过）——跨层搬迁没搬坏的主要证据，同时覆盖 `FactorBar` 接口变更的全部构造点。
 2. `npm run lint`。
-3. 新增 `src/shared/src/lib/pinbar.test.ts`：用合成 K 线钉住搬迁前后的行为——aggressive 与 conservative 两档的初始止损价、移动止损触发的那根 K 线、success/failed/in-progress 三种分类、以及"首个 in-progress 即 break"的截断行为。
+3. 新增 `src/shared/src/lib/pinbar.test.ts`：用合成 K 线钉住搬迁前后的行为——aggressive 与 conservative 两档的止损位（`stopPrice`）、移动止损触发的那根 K 线、success/failed/in-progress 三种分类、`wickRatio` 阈值的作用、以及"首个 in-progress 即 break"的截断行为。所有期望值取自搬迁前实现的实测输出，搬迁后必须逐位一致。
    - 若该环境下 vitest 实际跑不起来（`test` 脚本走 `ELECTRON_RUN_AS_NODE=1 electron`），需在实现阶段确认并如实汇报，不得把"没跑"说成"通过"。
 4. 人工核对渲染层 diff：应当只有 import 变化与代码搬出，没有行为改动。
 
