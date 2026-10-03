@@ -2,6 +2,7 @@ import type { AgentTool } from '@earendil-works/pi-agent-core';
 import { getKlines } from '../data/eastmoney';
 import { FACTORS, describeFactors, type FactorBar } from '../factors';
 import { evaluateSignals } from '../factors/backtest';
+import { summarizeMeta } from '../factors/meta-summary';
 import { ok, type PiType } from './common';
 
 export function createAnalyzeFactorTool(Type: PiType): AgentTool {
@@ -41,7 +42,12 @@ export function createAnalyzeFactorTool(Type: PiType): AgentTool {
       }));
       const signals = def.fn(bars, args.params ?? {});
       const { stats, trades } = evaluateSignals(bars, signals, args.holdBars ?? 20);
-      return ok({ factor: args.factor, ...stats }, { factor: args.factor, stats, trades }, 120000);
+      const metaSummary = summarizeMeta(signals);
+      return ok(
+        { factor: args.factor, ...stats, ...(metaSummary ? { metaSummary } : {}) },
+        { factor: args.factor, stats, metaSummary, trades },
+        120000,
+      );
     },
   };
 }
