@@ -1,9 +1,18 @@
 import type { FactorBar, FactorSignal } from './index';
-import { computePinbars, formatPercent, type PinbarResultType } from '@shared/lib/pinbar';
+import {
+  computePinbars,
+  formatPercent,
+  DEFAULT_WICK_RATIO,
+  type PinbarResultType,
+} from '@shared/lib/pinbar';
 
 /** 影线占比阈值参数 key */
 export const PINBAR_WICK_RATIO_KEY = 'wickRatio';
-export const PINBAR_DEFAULT_WICK_RATIO = 2 / 3;
+/**
+ * 默认阈值的唯一来源是 shared 的算法模块（渲染层 overlay 用的是同一个常量），
+ * 此处只做改名转发，避免两处各写一份 2/3 后悄悄漂移。
+ */
+export { DEFAULT_WICK_RATIO as PINBAR_DEFAULT_WICK_RATIO };
 
 /** 结局文案；in-progress 单独处理，故这里只覆盖已结束的两种 */
 function outcomeText(result: PinbarResultType, profit: number, endDate: string): string {
@@ -20,8 +29,7 @@ function outcomeText(result: PinbarResultType, profit: number, endDate: string):
  */
 export function pinbarFactor(bars: FactorBar[], params: Record<string, number>): FactorSignal[] {
   const raw = params[PINBAR_WICK_RATIO_KEY];
-  const wickRatio =
-    typeof raw === 'number' && Number.isFinite(raw) ? raw : PINBAR_DEFAULT_WICK_RATIO;
+  const wickRatio = typeof raw === 'number' && Number.isFinite(raw) ? raw : DEFAULT_WICK_RATIO;
 
   return computePinbars(bars, { stopMode: 'aggressive', wickRatio }).map((record): FactorSignal => {
     const entryBar = bars[record.index];

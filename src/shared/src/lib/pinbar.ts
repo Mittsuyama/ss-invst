@@ -73,7 +73,8 @@ export interface PinbarRecord {
   stopPrice: number;
 }
 
-const DEFAULT_WICK_RATIO = 2 / 3;
+/** 影线占比阈值默认值；对外导出，供调用方（如 agent 因子）复用同一份而非各自重写 */
+export const DEFAULT_WICK_RATIO = 2 / 3;
 
 function detectDirection(item: PinbarBar, wickRatio: number): PinbarDirection | null {
   const range = item.high - item.low;

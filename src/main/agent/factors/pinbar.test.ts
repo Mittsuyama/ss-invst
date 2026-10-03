@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { DEFAULT_WICK_RATIO } from '@shared/lib/pinbar';
 import { FACTORS, describeFactors, type FactorBar } from './index';
 import { pinbarFactor } from './pinbar';
 
@@ -83,6 +84,8 @@ describe('pinbar 因子', () => {
     expect(describeFactors()).toContain('pinbar');
     expect(describeFactors()).toContain('wickRatio=0.6667');
     expect(describeFactors()).not.toContain('0.6666666666666666');
+    // 默认阈值必须来自 shared 的算法常量，不能在这里另写一个字面量 2/3（否则会与图表阈值漂移）
+    expect(FACTORS.pinbar.params[0].default).toBe(DEFAULT_WICK_RATIO);
   });
 
   it('description 里写明结局是事后回测结果，并区分两种退出模型的胜率口径', () => {

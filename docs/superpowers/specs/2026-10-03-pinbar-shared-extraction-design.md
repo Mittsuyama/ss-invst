@@ -125,10 +125,12 @@ export function formatPercent(profit: number): string;
 FACTORS.pinbar = {
   name: 'pinbar',
   description: '长影线反转（pinbar）形态，含移动止损回测；注意结局字段是事后回测结果',
-  params: [{ key: 'wickRatio', desc: '影线占整根 K 线比例阈值', default: 2 / 3 }],
+  params: [{ key: 'wickRatio', desc: '影线占整根 K 线比例阈值', default: DEFAULT_WICK_RATIO }],
   fn: pinbarFactor,
 };
 ```
+
+（`DEFAULT_WICK_RATIO` 由 shared 的算法模块导出，因子侧只做改名转发。实现阶段发现两处各写一份 `2 / 3` 会让图表与 agent 的阈值可能悄悄漂移，故收敛为单一来源，并在测试里断言参数默认值等于该常量。）
 
 `pinbarFactor(bars, params)` 固定 `stopMode: 'aggressive'`，按 `wickRatio`（默认 2/3）调用 `computePinbars`，逐条记录映射为信号：
 
