@@ -27,11 +27,7 @@ const B: PinbarBar[] = [
 ];
 
 /** C：空头 pinbar（上影线）→ 失败 */
-const C: PinbarBar[] = [
-  bar(100, 104, 99, 100),
-  bar(100, 110, 100, 101),
-  bar(101, 111, 100, 110),
-];
+const C: PinbarBar[] = [bar(100, 104, 99, 100), bar(100, 110, 100, 101), bar(101, 111, 100, 110)];
 
 /** D：第一条 pinbar 永不触发止损（进行中），index 5 的有效 pinbar 应被截断 */
 const D: PinbarBar[] = [

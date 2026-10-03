@@ -154,7 +154,7 @@ export const FACTORS: Record<string, FactorDef> = {
   pinbar: {
     name: 'pinbar',
     description:
-      '长影线反转形态（pinbar）：下影线超长看多、上影线超长看空，并按移动止损规则给出历史回测结局。注意 result/profit/endDate 是入场之后的事后（forward-looking）回测结果，不是入场时可知的信息，请勿解读为当时即可预知；数据尾部一旦出现未触发止损的信号，更晚的 pinbar 不再输出（区间重叠）',
+      '长影线反转形态（pinbar）：下影线超长看多、上影线超长看空，并按移动止损规则给出历史回测结局。注意 result/profit/endDate 是入场之后的事后（forward-looking）回测结果，不是入场时可知的信息，请勿解读为当时即可预知；数据尾部一旦出现未触发止损的信号，更晚的 pinbar 不再输出（区间重叠）。analyze_factor 里的 stats 来自通用 holdBars 固定持有回测，metaSummary 来自 pinbar 原生移动止损结局，两者胜率口径不同、不可混用',
     params: [
       {
         key: PINBAR_WICK_RATIO_KEY,

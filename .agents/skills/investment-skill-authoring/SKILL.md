@@ -92,7 +92,9 @@ verify: verify.js                  # 可选，预留
 | `compute_factor` | `secid`, `factor`, `period?`, `limit?`, `params?` | 拉 K 线算买卖信号 |
 | `analyze_factor` | `secid`, `factor`, `period?`, `limit?`, `params?`, `holdBars?` | 信号回测：胜率/赔率/平均盈亏/交易明细 |
 
-内置因子：`macd_cross`(fast/slow/signal)、`ma_cross`(short/long)、`rsi_reversal`(period/oversold/overbought)、`boll_breakout`(period/mult)。
+内置因子：`macd_cross`(fast/slow/signal)、`ma_cross`(short/long)、`rsi_reversal`(period/oversold/overbought)、`boll_breakout`(period/mult)、`pinbar`(wickRatio)。
+
+因子信号可带通用 `meta` 附注（如 `pinbar` 的移动止损结局：`result`/`profit`/`endDate`/`stopPrice`/`direction`）。`analyze_factor` 会在 `stats`（通用 `holdBars` 固定持有回测）之外，对带 `meta.result` 的信号额外给出 `metaSummary`（结局分布、胜率、平均盈亏）；两者是**不同的退出模型**，口径不可混用。
 
 ### 网络
 

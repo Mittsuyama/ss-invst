@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { FACTORS, describeFactors, type FactorBar } from './index';
 import { pinbarFactor } from './pinbar';
 
-const bar = (
-  date: string,
-  open: number,
-  high: number,
-  low: number,
-  close: number,
-): FactorBar => ({ date, open, high, low, close });
+const bar = (date: string, open: number, high: number, low: number, close: number): FactorBar => ({
+  date,
+  open,
+  high,
+  low,
+  close,
+});
 
 /** 与 shared 层 B 组同形：多头 pinbar 后立刻打到初始止损 */
 const B: FactorBar[] = [
@@ -38,7 +38,8 @@ describe('pinbar 因子', () => {
       date: '2024-01-03',
       type: 'buy',
       price: 103,
-      reason: '多头（下影线） pinbar 入场，结束止损位 95；移动止损结局：失败 -7.8%（至 2024-01-04）',
+      reason:
+        '多头（下影线） pinbar 入场，结束止损位 95；移动止损结局：失败 -7.8%（至 2024-01-04）',
       meta: {
         direction: 'long',
         stopPrice: 95,
@@ -84,7 +85,10 @@ describe('pinbar 因子', () => {
     expect(describeFactors()).not.toContain('0.6666666666666666');
   });
 
-  it('description 里写明结局是事后回测结果', () => {
+  it('description 里写明结局是事后回测结果，并区分两种退出模型的胜率口径', () => {
     expect(FACTORS.pinbar.description).toContain('事后');
+    // stats（holdBars 固定持有）与 metaSummary（pinbar 原生移动止损）的胜率含义不同，
+    // 必须写进 description，否则模型会把 stats.winRate 当成 pinbar 胜率
+    expect(FACTORS.pinbar.description).toContain('不可混用');
   });
 });

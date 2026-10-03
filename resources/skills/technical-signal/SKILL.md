@@ -23,6 +23,7 @@ description: 短线技术分析：拉取 K 线并用因子计算买卖点。当�
 - ma_cross：双均线金叉/死叉（参数 short/long）
 - rsi_reversal：RSI 超买超卖反转（参数 period/oversold/overbought）
 - boll_breakout：布林带突破（参数 period/mult）
+- pinbar：长影线反转形态（下影线超长看多、上影线超长看空），按移动止损规则做历史回测（参数 wickRatio，默认 2/3）
 
 ## 执行循环
 
@@ -35,4 +36,6 @@ description: 短线技术分析：拉取 K 线并用因子计算买卖点。当�
 
 - 买卖点只是因子信号，需结合大盘环境、成交量、所处位置综合判断；
 - 明确说明每个买卖点对应的价格与信号原因；
+- pinbar 信号的「结局」（成功/失败/进行中、盈亏、结束日）是**入场之后的事后回测结果**，不是入场时可知的信息，不得据此声称当时可预知；数据尾部出现未触发止损的信号后，更晚的 pinbar 不再输出；
+- 用 `analyze_factor` 看 pinbar 时，返回里会有两套胜率：`stats` 是通用 `holdBars` 固定持有回测，`metaSummary` 是 pinbar 原生移动止损结局。**两者口径不同，不可混用**，也不要把 `stats.winRate` 说成"pinbar 胜率"；
 - 末尾给出风险提示，不做绝对买卖承诺。
