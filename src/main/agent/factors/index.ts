@@ -43,7 +43,12 @@ function macdCross(bars: FactorBar[], params: Record<string, number>): FactorSig
   const fast = Math.round(num(params, 'fast', 12));
   const slow = Math.round(num(params, 'slow', 26));
   const signal = Math.round(num(params, 'signal', 9));
-  const macd = computeMACD(bars.map((b) => b.close), fast, slow, signal);
+  const macd = computeMACD(
+    bars.map((b) => b.close),
+    fast,
+    slow,
+    signal,
+  );
   const out: FactorSignal[] = [];
   for (let i = 1; i < bars.length; i++) {
     const p = macd[i - 1];
@@ -60,8 +65,14 @@ function macdCross(bars: FactorBar[], params: Record<string, number>): FactorSig
 function maCross(bars: FactorBar[], params: Record<string, number>): FactorSignal[] {
   const short = Math.round(num(params, 'short', 5));
   const long = Math.round(num(params, 'long', 20));
-  const s = computeMA(bars.map((b) => b.close), short);
-  const l = computeMA(bars.map((b) => b.close), long);
+  const s = computeMA(
+    bars.map((b) => b.close),
+    short,
+  );
+  const l = computeMA(
+    bars.map((b) => b.close),
+    long,
+  );
   const out: FactorSignal[] = [];
   for (let i = 1; i < bars.length; i++) {
     const sPrev = s[i - 1];
@@ -70,9 +81,19 @@ function maCross(bars: FactorBar[], params: Record<string, number>): FactorSigna
     const lCur = l[i];
     if (sPrev == null || sCur == null || lPrev == null || lCur == null) continue;
     if (sPrev <= lPrev && sCur > lCur) {
-      out.push({ date: bars[i].date, type: 'buy', price: bars[i].close, reason: `MA${short} 上穿 MA${long}` });
+      out.push({
+        date: bars[i].date,
+        type: 'buy',
+        price: bars[i].close,
+        reason: `MA${short} 上穿 MA${long}`,
+      });
     } else if (sPrev >= lPrev && sCur < lCur) {
-      out.push({ date: bars[i].date, type: 'sell', price: bars[i].close, reason: `MA${short} 下穿 MA${long}` });
+      out.push({
+        date: bars[i].date,
+        type: 'sell',
+        price: bars[i].close,
+        reason: `MA${short} 下穿 MA${long}`,
+      });
     }
   }
   return out;
@@ -82,15 +103,28 @@ function rsiReversal(bars: FactorBar[], params: Record<string, number>): FactorS
   const period = Math.round(num(params, 'period', 14));
   const oversold = num(params, 'oversold', 30);
   const overbought = num(params, 'overbought', 70);
-  const rsi = computeRSI(bars.map((b) => b.close), period);
+  const rsi = computeRSI(
+    bars.map((b) => b.close),
+    period,
+  );
   const out: FactorSignal[] = [];
   for (let i = period + 1; i < bars.length; i++) {
     const cur = rsi[i - period];
     const prev = rsi[i - period - 1];
     if (prev >= oversold && cur < oversold) {
-      out.push({ date: bars[i].date, type: 'buy', price: bars[i].close, reason: `RSI 跌破 ${oversold}（超卖）` });
+      out.push({
+        date: bars[i].date,
+        type: 'buy',
+        price: bars[i].close,
+        reason: `RSI 跌破 ${oversold}（超卖）`,
+      });
     } else if (prev <= overbought && cur > overbought) {
-      out.push({ date: bars[i].date, type: 'sell', price: bars[i].close, reason: `RSI 升破 ${overbought}（超买）` });
+      out.push({
+        date: bars[i].date,
+        type: 'sell',
+        price: bars[i].close,
+        reason: `RSI 升破 ${overbought}（超买）`,
+      });
     }
   }
   return out;
@@ -99,14 +133,34 @@ function rsiReversal(bars: FactorBar[], params: Record<string, number>): FactorS
 function bollBreakout(bars: FactorBar[], params: Record<string, number>): FactorSignal[] {
   const period = Math.round(num(params, 'period', 20));
   const mult = num(params, 'mult', 2);
-  const boll = computeBOLL(bars.map((b) => b.close), period, mult);
+  const boll = computeBOLL(
+    bars.map((b) => b.close),
+    period,
+    mult,
+  );
   const out: FactorSignal[] = [];
   for (let i = 1; i < bars.length; i++) {
-    if (boll.upper[i] == null || boll.lower[i] == null || boll.upper[i - 1] == null || boll.lower[i - 1] == null) continue;
+    if (
+      boll.upper[i] == null ||
+      boll.lower[i] == null ||
+      boll.upper[i - 1] == null ||
+      boll.lower[i - 1] == null
+    )
+      continue;
     if (bars[i - 1].close >= boll.lower[i - 1]! && bars[i].close < boll.lower[i]!) {
-      out.push({ date: bars[i].date, type: 'buy', price: bars[i].close, reason: '跌破布林下轨（超卖）' });
+      out.push({
+        date: bars[i].date,
+        type: 'buy',
+        price: bars[i].close,
+        reason: '跌破布林下轨（超卖）',
+      });
     } else if (bars[i - 1].close <= boll.upper[i - 1]! && bars[i].close > boll.upper[i]!) {
-      out.push({ date: bars[i].date, type: 'sell', price: bars[i].close, reason: '升破布林上轨（超买）' });
+      out.push({
+        date: bars[i].date,
+        type: 'sell',
+        price: bars[i].close,
+        reason: '升破布林上轨（超买）',
+      });
     }
   }
   return out;

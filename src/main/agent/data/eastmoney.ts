@@ -7,11 +7,11 @@ export const runtime = {
   tushareToken: '',
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function emGet(
   url: string,
   params: Record<string, unknown>,
   headers: Record<string, unknown> = {},
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   const res = await axiosGet(url, params, { cookie: runtime.cookie, ...headers });
   if (res.code !== 0) {

@@ -39,7 +39,7 @@ const COLUMN_ORDER = [
   '^SECURITY_CODE',
   '^INDUSTRY',
   // } 结尾过滤掉 ROET...DATE 列，返回的是更新日期
-  '^ROET.*\}$',
+  '^ROET.*}$',
   '^PETTMDEDUCTED',
   // '^ROE_WEIGHT{.+}$',
   '^PB',

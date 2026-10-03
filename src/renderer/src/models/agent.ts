@@ -38,13 +38,23 @@ function genId(prefix: string): string {
   return `${prefix}-${seq}-${Date.now()}`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function contentToText(content: any): string {
+/** 模型消息里的内容块（文本 / 思考 / 工具调用）；主进程透传的宽松结构，字段都可缺省 */
+interface AgentContentBlock {
+  type?: string;
+  text?: string;
+  thinking?: string;
+  name?: string;
+  id?: string;
+  /** 工具调用参数，下游按 unknown 处理（见 ToolCallState.args / fileFromToolCall） */
+  arguments?: unknown;
+}
+
+function contentToText(content: unknown): string {
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
-    return content
-      .filter((b: any) => b?.type === 'text' && typeof b?.text === 'string')
-      .map((b: any) => b.text)
+    return (content as AgentContentBlock[])
+      .filter((b) => b?.type === 'text' && typeof b?.text === 'string')
+      .map((b) => b.text)
       .join('');
   }
   return '';
@@ -182,7 +192,7 @@ export function mapAgentMessages(
       const tools: ToolCallState[] = [];
       const files: SavedFileInfo[] = [];
       const messageKeyMoves: KeyMoveList[] = [];
-      for (const b of (m.content as any[]) ?? []) {
+      for (const b of (m.content as AgentContentBlock[] | undefined) ?? []) {
         if (b?.type === 'text' && typeof b?.text === 'string') text += b.text;
         else if (b?.type === 'thinking' && typeof b?.thinking === 'string') thinking += b.thinking;
         else if (b?.type === 'toolCall' && typeof b?.name === 'string') {
