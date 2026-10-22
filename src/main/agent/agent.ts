@@ -39,9 +39,10 @@ import {
 } from './session/session-store';
 import { sessionRuntime } from './session/session-runtime';
 import { buildModel } from './models';
-import { createTools } from './tools';
+import { createTools, toolsForProvider } from './tools';
 import { SYSTEM_PROMPT } from './system-prompt';
 import { runtime } from './data/eastmoney';
+import { deepseekRuntime } from './data/deepseek';
 import { readFileText } from './data/files';
 import { compactContext } from './compaction';
 import { listSkills, loadSkill } from './skill/skill-registry';
@@ -160,7 +161,8 @@ async function createAgent(): Promise<AgentInstance> {
     initialState: {
       systemPrompt: resolvedSystemPrompt,
       model: buildModel({ provider: 'deepseek', model: 'deepseek-chat', apiKey: '' }),
-      tools,
+      // 默认 DeepSeek；每次 prompt 会按实际 provider 重设
+      tools: toolsForProvider(tools, 'deepseek'),
     },
     streamFn: ai.streamSimple,
     toolExecution: 'parallel',
@@ -340,11 +342,12 @@ export const createAgentIpc = () => {
 
     // 主动校验：LLM API Key 未配置时直接给出友好提示（避免等一轮请求失败）
     const llm = payload.config?.llm;
-    const envVar = providerEnvKey(llm?.provider);
+    const provider = llm?.provider ?? 'deepseek';
+    const envVar = providerEnvKey(provider);
     if (!llm?.apiKey?.trim() && envVar && !process.env[envVar]) {
       emit({
         type: 'error',
-        message: `未配置 LLM API Key（${llm.provider}）。请在右上角「设置环境变量」里填写 API Key，或设置 ${envVar} 环境变量。`,
+        message: `未配置 LLM API Key（${provider}）。请在右上角「设置环境变量」里填写 API Key，或设置 ${envVar} 环境变量。`,
       });
       currentSender = null;
       return;
@@ -355,6 +358,9 @@ export const createAgentIpc = () => {
 
     // 记录当前解析后的 API Key，供上下文压缩的摘要 LLM 使用
     currentApiKey = llm?.apiKey?.trim() || (envVar ? process.env[envVar] : undefined);
+    // 网页搜索/抓取仅在 DeepSeek 提供商下可用；非 DeepSeek 时清空，避免误用旧 Key
+    deepseekRuntime.provider = provider;
+    deepseekRuntime.apiKey = provider === 'deepseek' ? (currentApiKey ?? '') : '';
 
     a.getApiKey = async () =>
       payload.config?.llm?.apiKey?.trim() ? payload.config.llm.apiKey.trim() : undefined;
@@ -372,7 +378,7 @@ export const createAgentIpc = () => {
       }
     }
     a.state.systemPrompt = resolvedSystemPrompt;
-    a.state.tools = tools;
+    a.state.tools = toolsForProvider(tools, provider);
 
     // 若正在运行，先中止上一轮
     if (a.state.isStreaming) {
@@ -510,7 +516,7 @@ export const createAgentIpc = () => {
     sessionRuntime.sessionId = id;
     a.reset();
     a.state.model = buildModel({ provider: 'deepseek', model: 'deepseek-chat', apiKey: '' });
-    a.state.tools = tools;
+    a.state.tools = toolsForProvider(tools, 'deepseek');
     a.state.messages = snap.messages as AgentMessage[];
     savedMessageCount = snap.messages.length;
     assistantCounter = 0;
