@@ -4,7 +4,7 @@ import { fetchTencentMinute } from '@/api/tencent';
 import type { TrendItem } from '@/api/tick-details';
 import type { TickStatus, TrendSource } from '@/hooks/trend-source';
 
-const POLL_INTERVAL_MS = 10 * 1000;
+const POLL_INTERVAL_MS = 60 * 1000;
 
 /**
  * 腾讯分时轮询数据源。

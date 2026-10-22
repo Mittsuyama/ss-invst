@@ -22,7 +22,7 @@ export function AssistantMessage({
 }: AssistantMessageProps) {
   return (
     <div className="flex justify-start space-y-3">
-      <div className="max-w-[92%] w-full min-w-0 space-y-3">
+      <div className="w-full min-w-0 space-y-3">
         {/* 思考过程 */}
         {message.thinking && (
           <details className="text-xs text-muted-foreground bg-muted/50 border border-border rounded-md px-3 py-2">

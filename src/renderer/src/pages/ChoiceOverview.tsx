@@ -12,7 +12,7 @@ export const ChoiceOverview = memo(() => {
   const detailFullScreen = useAtomValue(detailFullScreenAtom);
 
   return (
-    <div className="w-full h-full pt-2 bg-background text-foreground z-50 overflow-hidden flex">
+    <div className="w-full h-full pt-3 bg-background text-foreground z-50 overflow-hidden flex">
       <div
         className={clsx('flex-none w-62 overflow-x-hidden overflow-y-auto', {
           hidden: detailFullScreen,
@@ -22,7 +22,7 @@ export const ChoiceOverview = memo(() => {
       </div>
       <Detail
         id={id}
-        className={clsx('flex-1 pr-4', {
+        className={clsx('flex-1 pr-2', {
           'pl-4': detailFullScreen,
         })}
       />

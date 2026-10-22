@@ -55,6 +55,10 @@ let agent: AgentInstance | null = null;
 /** ensureAgent 的在途 Promise（原子化懒初始化，避免并发下创建多个 Agent） */
 let agentPromise: Promise<AgentInstance> | null = null;
 let currentSender: WebContents | null = null;
+/**
+ * assistant 消息 id 的序号：**会话内**唯一，只有切换/新建/清空会话或 reset 时才清零。
+ * 跨轮不清零，否则每轮都会从 a1 重新开始，渲染层会把新一轮的增量写到上一轮的气泡里。
+ */
 let assistantCounter = 0;
 let currentAssistantId: string | null = null;
 
@@ -176,7 +180,7 @@ async function createAgent(): Promise<AgentInstance> {
   a.subscribe(async (event) => {
     switch (event.type) {
       case 'agent_start':
-        assistantCounter = 0;
+        // 注意：assistantCounter 不在这里清零——id 必须会话内唯一（见上方声明处注释）
         currentAssistantId = null;
         emit({ type: 'run_start' });
         break;

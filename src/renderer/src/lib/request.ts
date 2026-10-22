@@ -28,7 +28,7 @@ interface ListGetItemResult {
 }
 
 export async function listGetRequest(
-  list: Array<{ url: string; params: unknown }>,
+  list: Array<{ url: string; params: unknown; headers?: Record<string, unknown> }>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<Array<any>> {
   const res = (await window.electron.ipcRenderer.invoke(

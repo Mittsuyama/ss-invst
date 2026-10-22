@@ -1,7 +1,9 @@
 import dayjs from 'dayjs';
+import { getDefaultStore } from 'jotai';
 import { listGetRequest, request } from '@/lib/request';
 import { RequestType } from '@shared/types/request';
 import { PeriodType, PriceAndVolumeItem } from '@shared/types/stock';
+import { envAtom } from '@/models/detail';
 
 const transformToPriceAndVolumnItem = (period: PeriodType, line: string) => {
   const items = line.split(',');
@@ -74,6 +76,7 @@ const trendParams = {
 };
 
 export const fetchTrendsList = async (ids: string[]) => {
+  const env = getDefaultStore().get(envAtom);
   const batch = await listGetRequest(
     ids.map((id) => ({
       url: 'https://push2his.eastmoney.com/api/qt/stock/trends2/get',
@@ -81,6 +84,7 @@ export const fetchTrendsList = async (ids: string[]) => {
         secid: id,
         ...trendParams,
       },
+      headers: { cookie: env.cookie },
     })),
   );
   return batch.map((res) =>

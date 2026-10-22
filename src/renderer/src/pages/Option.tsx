@@ -153,25 +153,25 @@ export const Option = memo(() => {
               })}
             >
               {(Number(value) / 10000).toFixed(4)}
-              <div className="absolute w-full h-full top-0 left-0 flex gap-2 items-center justify-center bg-muted opacity-0 hover:opacity-100">
+              <div className="absolute w-full h-full top-0 left-0 flex gap-1 items-center justify-center bg-muted opacity-0 hover:opacity-100">
                 {(Number(value) / 10000).toFixed(4)}
                 <div
                   onClick={() => onOptionSelectToggle(item, 'buy')}
-                  className={clsx('px-2 py-1 rounded-full text-xs', {
+                  className={clsx('w-7 h-7 flex justify-center items-center rounded-full text-xs', {
                     'bg-red-600 hover:bg-red-700 text-white': itemInList?.direction === 'buy',
                     'hover:bg-red-600/20': itemInList?.direction !== 'buy',
                   })}
                 >
-                  买入
+                  买
                 </div>
                 <div
                   onClick={() => onOptionSelectToggle(item, 'sell')}
-                  className={clsx('px-2 py-1 rounded-full text-xs', {
+                  className={clsx('w-7 h-7 flex justify-center items-center rounded-full text-xs', {
                     'bg-green-600 hover:bg-green-700 text-white': itemInList?.direction === 'sell',
                     'hover:bg-green-600/20': itemInList?.direction !== 'sell',
                   })}
                 >
-                  卖出
+                  卖
                 </div>
               </div>
             </div>

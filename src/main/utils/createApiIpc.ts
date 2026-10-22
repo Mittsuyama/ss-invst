@@ -13,10 +13,15 @@ export const createApiIpc = () => {
     return await axiosPost(url, params, headers);
   });
 
-  ipcMain.handle(RequestType.LIST_GET, async (_, list: Array<{ url: string; params: unknown }>) => {
-    const resList = await Promise.all(list.map((item) => axiosGet(item.url, item.params)));
-    return resList;
-  });
+  ipcMain.handle(
+    RequestType.LIST_GET,
+    async (_, list: Array<{ url: string; params: unknown; headers?: unknown }>) => {
+      const resList = await Promise.all(
+        list.map((item) => axiosGet(item.url, item.params, item.headers)),
+      );
+      return resList;
+    },
+  );
 
   ipcMain.handle(RequestType.CHANLUN_COMPUTE, async (_, list: PriceAndVolumeItem[]) => {
     const strokes = computeStrokeSimply(list);

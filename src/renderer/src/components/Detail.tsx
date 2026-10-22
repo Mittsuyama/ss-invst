@@ -263,7 +263,7 @@ export const Detail = memo((props: DetailProps) => {
           {headerExtra}
         </div>
       </div>
-      <div className="flex-1 flex overflow-hidden gap-6 pb-6">
+      <div className="flex-1 flex overflow-hidden gap-3 pb-3">
         {showFundamental && isAShare ? (
           <div className="flex-1 overflow-hidden">
             <FundamentalDetail stockId={id} />

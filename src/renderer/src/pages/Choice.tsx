@@ -21,7 +21,6 @@ import { buildConditionStockQuery } from '@/lib/condition-stock';
 import { fetchConditionStockList } from '@renderer/api/stock';
 import { useEastMoneyTrends } from '@/hooks/useEastMoneyTrends';
 import { useTencentTrends } from '@/hooks/useTencentTrends';
-import type { TrendSourceKind } from '@/hooks/trend-source';
 import {
   favStockIdListAtom,
   holdQuantityAtom,
@@ -88,9 +87,6 @@ const sortConfigs: Record<
   marketValue: { label: '总市值(亿)', getValue: (item) => item.totalMarketValue },
 };
 
-// 分时数据源开关：'tencent'（腾讯轮询，默认）| 'eastmoney'（东财 SSE push）
-const TREND_SOURCE: TrendSourceKind = 'tencent';
-
 export const Choice = memo(() => {
   const watchIdList = useAtomValue(watchStockIdListAtom);
   const holdIdList = useAtomValue(favStockIdListAtom);
@@ -121,7 +117,7 @@ export const Choice = memo(() => {
   const isEmpty = idList.length < 1;
 
   // 分时数据：腾讯轮询 / 东财 SSE push，二选一（开关见文件顶部 TREND_SOURCE）
-  const isTencent = TREND_SOURCE === 'tencent';
+  const isTencent = true;
   const tencentTrends = useTencentTrends(idList, isTencent);
   const eastMoneyTrends = useEastMoneyTrends(idList, !isTencent);
   const { trendsMap, prePriceMap, tickStatus, errorTickIds, retryTick, retryAllTicks } = isTencent

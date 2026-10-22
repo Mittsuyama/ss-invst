@@ -3,6 +3,19 @@ import type { KeyMoveList } from '@shared/types/key-move';
 import type { ChatMessage, ToolCallState } from '@/models/agent';
 import type { AgentChatState } from './agentChatReducer';
 
+/**
+ * 定位「当前正在流式输出的那条消息」的下标。
+ * 同 id 出现多次时取最后一条：assistant_message_start 总是把新消息追加在末尾，
+ * 因此最后一条才是本轮的消息；早期版本存在跨轮同 id 的历史数据，用最后一条可避免
+ * 把增量写进上一轮气泡。
+ */
+function lastIndexById(messages: ChatMessage[], id: string): number {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i].id === id) return i;
+  }
+  return -1;
+}
+
 /** 把缓存的文件 / 关键行情合并到最后一个 assistant 消息上 */
 function flushIntoLastAssistant(
   messages: ChatMessage[],
@@ -49,7 +62,7 @@ export function applyAgentEvent(state: AgentChatState, e: AgentEvent): AgentChat
       return { ...state, messages: [...state.messages, message] };
     }
     case 'assistant_text_delta': {
-      const idx = state.messages.findIndex((m) => m.id === e.messageId);
+      const idx = lastIndexById(state.messages, e.messageId);
       const hadText = idx >= 0 && state.messages[idx].text.length > 0;
       return {
         ...state,
@@ -75,18 +88,24 @@ export function applyAgentEvent(state: AgentChatState, e: AgentEvent): AgentChat
         }),
       };
     }
-    case 'assistant_thinking_delta':
+    case 'assistant_thinking_delta': {
+      const idx = lastIndexById(state.messages, e.messageId);
+      if (idx < 0) return state;
       return {
         ...state,
-        messages: state.messages.map((m) =>
-          m.id === e.messageId ? { ...m, thinking: (m.thinking ?? '') + e.text } : m,
+        messages: state.messages.map((m, i) =>
+          i === idx ? { ...m, thinking: (m.thinking ?? '') + e.text } : m,
         ),
       };
-    case 'assistant_message_end':
+    }
+    case 'assistant_message_end': {
+      const idx = lastIndexById(state.messages, e.messageId);
+      if (idx < 0) return state;
       return {
         ...state,
-        messages: state.messages.map((m) => (m.id === e.messageId ? { ...m, done: true } : m)),
+        messages: state.messages.map((m, i) => (i === idx ? { ...m, done: true } : m)),
       };
+    }
     case 'tool_start': {
       const lastAssistant = [...state.messages].reverse().find((m) => m.role === 'assistant');
       if (!lastAssistant) return state;
