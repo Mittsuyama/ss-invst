@@ -10,3 +10,9 @@ reports
 
 # 微信读书笔记知识库流水线的中间产物（可由 raw/ + kp/ 重新生成）
 .scratch/
+
+# npm 本地缓存（不是项目依赖，不应进入版本库）
+.npm-cache/
+
+# 本地 Claude Code 兼容链接（指向 .agents/skills/weread-skills）
+.claude/skills/weread-skills/
