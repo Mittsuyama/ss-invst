@@ -7,3 +7,6 @@ out
 .env
 reports
 .superpowers/
+
+# 微信读书笔记知识库流水线的中间产物（可由 raw/ + kp/ 重新生成）
+.scratch/

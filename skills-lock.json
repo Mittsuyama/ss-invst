@@ -19,6 +19,12 @@
       "skillPath": "skills/vchart-development-assistant/SKILL.md",
       "computedHash": "efe04e61650fa0601de922fefda60a03a7ea35fda04cbcb4507d5669550feb76"
     },
+    "weread-skills": {
+      "source": "Tencent/WeChatReading",
+      "sourceType": "github",
+      "skillPath": "skills/SKILL.md",
+      "computedHash": "3f78fdb9c92440966edf79e1d3dee78bc1cb6bd1553667d8c1c7e3197da1af0f"
+    },
     "writing-plans": {
       "source": "obra/superpowers",
       "sourceType": "github",
